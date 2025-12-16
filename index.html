@@ -523,7 +523,7 @@
             toggleLoading(true);
 
             try {
-                const response = await fetch(`http://localhost:3000/api/voucher-transactions?rangeStart=${start}&rangeEnd=${end}`);
+                const response = await fetch(`http://172.16.19.151:3000/api/voucher-transactions?rangeStart=${start}&rangeEnd=${end}`);
                 
                 if (!response.ok) throw new Error('Error en la respuesta del servidor');
                 
