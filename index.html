@@ -405,7 +405,7 @@
                 <ul class="list-disc list-inside space-y-2 ml-1">
                     <li>Use el panel superior para seleccionar el rango de fechas.</li>
                     <li><strong>Nueva Columna Observación:</strong> Se genera automáticamente según el tipo de servicio o proveedor.</li>
-                    <li><strong>Configuración API:</strong> Si la conexión falla, aparecerá un campo para ingresar la dirección de su servidor.</li>
+                    <li><strong>Configuración API:</strong> Detección automática de IP del servidor.</li>
                     <li><strong>Gráficos Interactivos:</strong> Haga clic en una sección del gráfico circular para filtrar.</li>
                     <li><strong>Exportación:</strong> Descargue en Excel o PDF.</li>
                 </ul>
@@ -422,30 +422,30 @@
         document.getElementById('current-date').textContent = new Date().toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
         
         // =========================================================================================
-        // CONFIGURACIÓN DE CONEXIÓN (IP DEL SERVIDOR)
+        // CONFIGURACIÓN DE CONEXIÓN (AUTOMÁTICA / RELATIVA)
         // =========================================================================================
-        // Configuración basada en tu IP: 172.16.19.151
-        // Puerto asumido: 3000 (Estándar de Node.js, cámbialo si usas otro)
-        const DEFAULT_API_URL = 'http://172.16.19.151:3000'; 
+        // Al dejar esto vacío, el navegador usará automáticamente la dirección desde la que
+        // cargaste la página (ej: http://172.16.19.151:3000) para hacer las peticiones API.
+        const DEFAULT_API_URL = ''; 
 
         function getApiBaseUrl() {
-            // 1. Si el usuario guardó una URL manual, usarla.
+            // Prioridad 1: Configuración manual del usuario (por si falla la automática)
             const savedUrl = localStorage.getItem('custom_api_url');
             if (savedUrl) return savedUrl.replace(/\/$/, '');
             
-            // 2. Si no, usar la IP fija de tu servidor.
+            // Prioridad 2: Ruta relativa (Estándar Web)
+            // Si abres el archivo directamente con doble clic (file://), esto no servirá,
+            // por eso es importante usar el servidor http://IP:PUERTO
             return DEFAULT_API_URL; 
         }
 
-        // Función para guardar la nueva URL ingresada por el usuario en caso de error
+        // Función para guardar URL manual si es necesario
         function saveApiUrl() {
             const input = document.getElementById('apiUrlInput');
             if (input && input.value) {
                 let url = input.value.trim();
-                // Validaciones básicas
                 if (!url.startsWith('http')) url = 'http://' + url;
                 localStorage.setItem('custom_api_url', url);
-                // Recargar o reintentar
                 document.getElementById('searchForm').dispatchEvent(new Event('submit'));
             }
         }
@@ -486,44 +486,14 @@
             const detalle = (row['Detalle del Pago'] || '').toUpperCase();
 
             // Reglas de Clasificación Automática (Basadas en el archivo Estructura.xlsx)
-            
-            // 1. RESONANCIAS / IMAGENES
-            if (tercero.includes("RAYOS X") || tercero.includes("RESONANCIA")) {
-                return "SERVICIO DE RESONANCIAS";
-            }
-            
-            // 2. MATERIAL MÉDICO
-            if (tercero.includes("DOTACIONES MEDICAS") || 
-                tercero.includes("BOSTON SCIENTIFIC") || 
-                detalle.includes("MATERIAL MEDICO") ||
-                tercero.includes("SUMINISTROS D&M")) {
-                return "MATERIAL MÉDICO QUIRÚRGICO";
-            }
-
-            // 3. MEDICAMENTOS
-            if (tercero.includes("VITALIS") || 
-                tercero.includes("BIOSPIFAR") || 
-                tercero.includes("DEPÓSITO DE DROGAS") ||
-                detalle.includes("MEDICAMENTOS")) {
-                return "MEDICAMENTOS";
-            }
-
-            // 4. HONORARIOS / AGREMIACIONES / ESPECIALISTAS
-            if (tercero.includes("SINDICATO GREMIAL") || tercero.includes("ASEMHO")) {
-                return "ASISTENCIAL - GREMIO";
-            }
-            if (tercero.includes("SERVICIOS INTEGRALES EN MEDICINA") || detalle.includes("URGENCIOLOGO")) {
-                return "MÉDICO ESPECIALISTA - URGENCIOLOGO";
-            }
-            if (tercero.includes("HEMATOONCOLOGO") || tercero.includes("HEMATOONCOLOGÍA")) {
-                return "ESP. HEMATOONCOLOGÍA PEDIÁTRICA";
-            }
-
-            // 5. SERVICIOS GENERALES / OTROS
+            if (tercero.includes("RAYOS X") || tercero.includes("RESONANCIA")) return "SERVICIO DE RESONANCIAS";
+            if (tercero.includes("DOTACIONES MEDICAS") || tercero.includes("BOSTON SCIENTIFIC") || detalle.includes("MATERIAL MEDICO") || tercero.includes("SUMINISTROS D&M")) return "MATERIAL MÉDICO QUIRÚRGICO";
+            if (tercero.includes("VITALIS") || tercero.includes("BIOSPIFAR") || tercero.includes("DEPÓSITO DE DROGAS") || detalle.includes("MEDICAMENTOS")) return "MEDICAMENTOS";
+            if (tercero.includes("SINDICATO GREMIAL") || tercero.includes("ASEMHO")) return "ASISTENCIAL - GREMIO";
+            if (tercero.includes("SERVICIOS INTEGRALES EN MEDICINA") || detalle.includes("URGENCIOLOGO")) return "MÉDICO ESPECIALISTA - URGENCIOLOGO";
+            if (tercero.includes("HEMATOONCOLOGO") || tercero.includes("HEMATOONCOLOGÍA")) return "ESP. HEMATOONCOLOGÍA PEDIÁTRICA";
             if (tercero.includes("ELECTRIFICADORA")) return "SERVICIOS PÚBLICOS - ENERGÍA";
             if (tercero.includes("AGUAS DEL HUILA")) return "SERVICIOS PÚBLICOS - ACUEDUCTO";
-            
-            // Clasificación por defecto si no cae en reglas anteriores
             if (detalle.includes("HONORARIOS")) return "HONORARIOS";
             if (detalle.includes("SUMINISTRO")) return "SUMINISTROS";
             if (detalle.includes("MANTENIMIENTO")) return "MANTENIMIENTO";
@@ -538,11 +508,8 @@
             const end = document.getElementById('rangeEnd').value;
             const statusEl = document.getElementById('statusMessage');
             
-            // Limpiar filtros locales
             document.getElementById('searchInput').value = '';
-            // Reset MultiSelect
-            const dropdown = document.getElementById('multiSelectDropdown');
-            dropdown.innerHTML = '';
+            document.getElementById('multiSelectDropdown').innerHTML = '';
             updateMultiSelectLabel();
             
             statusEl.classList.add('hidden');
@@ -555,26 +522,26 @@
             const currentApiUrl = getApiBaseUrl();
 
             try {
-                // Validación para entornos mixtos (HTTPS vs HTTP)
-                if (window.location.protocol === 'https:' && currentApiUrl.startsWith('http:')) {
-                    console.warn("Advertencia: Conexión mixta (HTTPS -> HTTP). Asegúrese de que el navegador permita contenido inseguro.");
-                }
-
                 // Construcción de la URL
-                // Si currentApiUrl está vacío, fetch usará la ruta relativa al dominio actual.
+                // IMPORTANTE: Al ser relativa (''), se agrega automáticamente el /api al dominio actual.
                 let fetchUrl = `${currentApiUrl}/api/voucher-transactions?rangeStart=${start}&rangeEnd=${end}`;
+
+                // Advertencia si se abre como archivo local
+                if (window.location.protocol === 'file:' && !currentApiUrl) {
+                    throw new Error("Estás abriendo el archivo localmente (file://). Debes usar un servidor web o configurar la IP manualmente abajo.");
+                }
 
                 const response = await fetch(fetchUrl);
                 
                 if (!response.ok) {
-                    if(response.status === 404) throw new Error(`Ruta no encontrada (404). Verifique la URL base: "${currentApiUrl || 'relativa'}"`);
+                    if(response.status === 404) throw new Error(`Ruta no encontrada (404). Verifique la URL base.`);
                     if(response.status === 500) throw new Error('Error interno del servidor.');
                     throw new Error(`Error del servidor: ${response.status} ${response.statusText}`);
                 }
                 
                 const result = await response.json();
                 
-                if(!result || !result.data) throw new Error('La respuesta del servidor no tiene el formato correcto (falta campo "data").');
+                if(!result || !result.data) throw new Error('La respuesta del servidor no tiene el formato correcto.');
                 
                 // Procesamiento de Datos Reales
                 globalData = result.data.map(item => ({
@@ -603,24 +570,23 @@
                 
                 if (error.message.includes("Failed to fetch") || error.message.includes("NetworkError")) {
                     errorMsg = `<strong>No se pudo conectar al servidor.</strong><br>
-                                El sistema intentó conectar a: <strong>"${currentApiUrl || 'ruta relativa'}"</strong><br><br>
-                                <strong>¿Es incorrecta esta dirección?</strong> Configure la URL de su servidor aquí:`;
+                                Intento de conexión a: <strong>"${currentApiUrl || '/api/...'}"</strong><br>
+                                Si estás viendo esto, es posible que no estés accediendo a través de la IP del servidor.<br><br>
+                                <strong>Configure la IP de su servidor (ej: http://172.16.19.151:3000):</strong>`;
                     showConfig = true;
-                } else if (error.message.includes("404")) {
-                     errorMsg += `<br><br><strong>Configure la URL de su servidor aquí:</strong>`;
+                } else if (error.message.includes("file://")) {
+                     errorMsg = `<strong>Modo Archivo Detectado:</strong><br>
+                                 Este sistema requiere un servidor backend. Ingrese la IP donde corre el servidor Node.js:`;
                      showConfig = true;
                 }
 
-                // Mostrar mensaje y formulario de configuración si es necesario
                 showStatus(errorMsg, 'error', showConfig);
             } finally {
                 toggleLoading(false);
             }
         });
 
-        // --- LÓGICA DE FILTROS LOCALES (CONCATENADOS & MULTIPLE) ---
-        
-        // 1. Manejo del Dropdown
+        // --- LÓGICA DE FILTROS LOCALES ---
         const multiSelectBtn = document.getElementById('multiSelectBtn');
         const multiSelectDropdown = document.getElementById('multiSelectDropdown');
         
@@ -629,25 +595,21 @@
             multiSelectDropdown.classList.toggle('hidden');
         });
 
-        // Cerrar al hacer clic fuera
         document.addEventListener('click', (e) => {
             if (!multiSelectBtn.contains(e.target) && !multiSelectDropdown.contains(e.target)) {
                 multiSelectDropdown.classList.add('hidden');
             }
         });
 
-        // 2. Llenar el Multi-Select con Checkboxes
         function populateMultiSelect(data) {
             const uniqueObs = [...new Set(data.map(item => item['ObservacionCalculada']))].filter(Boolean).sort();
             multiSelectDropdown.innerHTML = '';
 
-            // Opción "Seleccionar Todos"
             const allDiv = document.createElement('div');
             allDiv.className = 'checkbox-item font-bold border-b border-gray-100';
             allDiv.innerHTML = `<input type="checkbox" id="selectAllObs" checked> <label for="selectAllObs" class="cursor-pointer w-full">Seleccionar Todos</label>`;
             multiSelectDropdown.appendChild(allDiv);
 
-            // Listener "Seleccionar Todos"
             const allCheckbox = allDiv.querySelector('input');
             allCheckbox.addEventListener('change', (e) => {
                 const checkboxes = multiSelectDropdown.querySelectorAll('input[type="checkbox"]:not(#selectAllObs)');
@@ -656,25 +618,19 @@
                 applyLocalFilters();
             });
 
-            // Opciones Individuales
             uniqueObs.forEach(obs => {
                 const div = document.createElement('div');
                 div.className = 'checkbox-item';
-                // Generar ID único seguro
                 const safeId = 'obs-' + obs.replace(/[^a-z0-9]/gi, '_');
                 div.innerHTML = `<input type="checkbox" value="${obs}" id="${safeId}" checked> <label for="${safeId}" class="cursor-pointer w-full text-sm text-gray-600 truncate">${obs}</label>`;
                 multiSelectDropdown.appendChild(div);
 
-                // Listener individual
                 const cb = div.querySelector('input');
                 cb.addEventListener('change', () => {
-                    // Si alguno se desmarca, desmarcar "Todos"
                     if (!cb.checked) allCheckbox.checked = false;
-                    // Si todos se marcan, marcar "Todos"
                     const allOpts = multiSelectDropdown.querySelectorAll('input[type="checkbox"]:not(#selectAllObs)');
                     const allChecked = Array.from(allOpts).every(c => c.checked);
                     if(allChecked) allCheckbox.checked = true;
-
                     updateMultiSelectLabel();
                     applyLocalFilters();
                 });
@@ -699,56 +655,40 @@
             }
         }
 
-        // 3. Función Maestra de Filtrado
         function applyLocalFilters() {
             const searchText = document.getElementById('searchInput').value.toLowerCase().trim();
-            
-            // Obtener lista de observaciones seleccionadas
             const checkboxes = multiSelectDropdown.querySelectorAll('input[type="checkbox"]:not(#selectAllObs)');
-            const selectedObservations = Array.from(checkboxes)
-                .filter(cb => cb.checked)
-                .map(cb => cb.value);
+            const selectedObservations = Array.from(checkboxes).filter(cb => cb.checked).map(cb => cb.value);
 
-            // Filtrar desde la data global
             filteredData = globalData.filter(row => {
                 const name = (row['Tercero Nombre'] || '').toLowerCase();
                 const id = (row['ID Tercero'] || '').toString().toLowerCase();
                 const realObs = row['ObservacionCalculada'];
                 
-                // Filtro Texto (ID o Nombre) - Búsqueda aproximada
                 const matchesSearch = !searchText || name.includes(searchText) || id.includes(searchText);
-                
-                // Filtro Multi-Select - Verifica si la observación está en la lista de seleccionados
                 const matchesSelect = selectedObservations.includes(realObs);
 
-                // CONCATENACIÓN: Ambos deben ser verdaderos (AND Logic)
                 return matchesSearch && matchesSelect;
             });
             
-            // Re-aplicar ordenamiento si existe
             if (sortConfig.key) {
                 performSort(sortConfig.key, sortConfig.direction);
             }
 
             renderTable(filteredData);
-            // CONCATENACIÓN VISUAL: Las gráficas se renderizan con la data filtrada
             renderCharts(filteredData);
         }
 
-        // Listener para búsqueda de texto
         document.getElementById('searchInput').addEventListener('input', applyLocalFilters);
 
         // --- LÓGICA DE ORDENAMIENTO ---
-
         function handleSort(key) {
-            // Alternar dirección si es la misma columna
             if (sortConfig.key === key) {
                 sortConfig.direction = sortConfig.direction === 'asc' ? 'desc' : 'asc';
             } else {
                 sortConfig.key = key;
                 sortConfig.direction = 'asc';
             }
-
             performSort(key, sortConfig.direction);
             renderTable(filteredData);
         }
@@ -758,7 +698,6 @@
                 let valA = a[key] || '';
                 let valB = b[key] || '';
 
-                // Manejo especial para fechas y números
                 if (key === 'Fecha del Comprobante') {
                     valA = new Date(valA).getTime();
                     valB = new Date(valB).getTime();
@@ -766,7 +705,6 @@
                     valA = parseFloat(valA) || 0;
                     valB = parseFloat(valB) || 0;
                 } else {
-                    // Texto: Case insensitive
                     valA = valA.toString().toLowerCase();
                     valB = valB.toString().toLowerCase();
                 }
@@ -778,19 +716,16 @@
         }
 
         function updateSortIcons() {
-            // Resetear todos los iconos
             document.querySelectorAll('.sort-icon').forEach(icon => {
                 icon.className = 'fas fa-sort sort-icon';
                 icon.style.opacity = '0.3';
             });
-
-            // Activar el actual
             if (sortConfig.key) {
                 const activeIcon = document.getElementById(`icon-${sortConfig.key}`);
                 if (activeIcon) {
                     activeIcon.className = sortConfig.direction === 'asc' ? 'fas fa-sort-up sort-icon' : 'fas fa-sort-down sort-icon';
                     activeIcon.style.opacity = '1';
-                    activeIcon.style.color = 'var(--color-terciario)'; // Color destacado
+                    activeIcon.style.color = 'var(--color-terciario)'; 
                 }
             }
         }
@@ -800,8 +735,6 @@
             const tbody = document.getElementById('resultsBody');
             tbody.innerHTML = '';
             let total = 0;
-            
-            // Actualizar iconos visuales de ordenamiento
             updateSortIcons();
 
             if (data.length === 0) {
@@ -811,7 +744,6 @@
                 return;
             }
 
-            // Mostrar máx 1000 filas para rendimiento
             const displayData = data.slice(0, 1000); 
 
             displayData.forEach(row => {
@@ -824,7 +756,6 @@
                     <td class="px-6 py-3 whitespace-nowrap text-xs text-slate-500 font-medium">${dateFormatter(row['Fecha del Comprobante'])}</td>
                     <td class="px-6 py-3 font-semibold text-slate-700 truncate max-w-xs" title="${row['Tercero Nombre']}">${row['Tercero Nombre'] || 'N/A'}</td>
                     <td class="px-6 py-3 text-slate-500 font-mono text-xs">${row['ID Tercero'] || ''}</td>
-                    <!-- CELDA OBSERVACIÓN -->
                     <td class="px-6 py-3 text-secundario font-bold text-xs uppercase truncate max-w-xs" title="${row['ObservacionCalculada']}">${row['ObservacionCalculada']}</td>
                     <td class="px-6 py-3 text-slate-500 text-xs">${row['Entidad Bancaria'] || ''}</td>
                     <td class="px-6 py-3 text-slate-500 text-xs truncate max-w-xs" title="${row['Detalle del Pago']}">${row['Detalle del Pago'] || ''}</td>
@@ -833,12 +764,9 @@
                 tbody.appendChild(tr);
             });
 
-            // Total REAL sobre todos los datos filtrados
             const realTotal = data.reduce((sum, row) => sum + (row['Valor Pagado'] || 0), 0);
             document.getElementById('totalAmount').textContent = currencyFormatter.format(realTotal);
-            
-            const countText = data.length > 1000 ? `Mostrando 1000 de ${data.length} registros.` : `${data.length} registros.`;
-            document.getElementById('recordCountLabel').textContent = countText;
+            document.getElementById('recordCountLabel').textContent = data.length > 1000 ? `Mostrando 1000 de ${data.length} registros.` : `${data.length} registros.`;
         }
 
         // --- LÓGICA DE GRÁFICAS ---
@@ -893,16 +821,12 @@
                         if (elements.length > 0) {
                             const index = elements[0].index;
                             const label = labels[index];
-
                             if (label === 'Otros') {
                                 showStatus('La categoría "Otros" agrupa varios proveedores. Utilice la tabla para buscar.', 'warning');
                                 return;
                             }
-
-                            // Aplicar Filtro Visual
                             document.getElementById('searchInput').value = label;
                             applyLocalFilters();
-                            
                             showStatus(`Filtrando dashboard por proveedor: <strong>${label}</strong>`, 'success');
                             document.getElementById('section-resumen').scrollIntoView({ behavior: 'smooth' });
                         }
@@ -931,7 +855,6 @@
             data.forEach(item => {
                 const dateStr = item['Fecha del Comprobante'];
                 if (!dateStr) return;
-                
                 const dateObj = new Date(dateStr);
                 let key, label, sortValue;
 
@@ -958,7 +881,6 @@
             });
 
             const sortedArray = Object.values(aggregatedData).sort((a, b) => a.sortValue - b.sortValue);
-
             const labels = sortedArray.map(item => item.label.charAt(0).toUpperCase() + item.label.slice(1));
             const values = sortedArray.map(item => item.value);
 
@@ -995,15 +917,12 @@
             });
         }
 
-        // --- FUNCIONES DE EXPORTACIÓN (USAN DATOS FILTRADOS) ---
-
-        // 1. Exportar a Excel (XLSX)
+        // --- FUNCIONES DE EXPORTACIÓN ---
         function downloadExcel() {
             if (!filteredData || filteredData.length === 0) {
                 alert("No hay datos visibles para exportar");
                 return;
             }
-
             const exportData = filteredData.map(row => ({
                 "Fecha": dateFormatter(row['Fecha del Comprobante']),
                 "Beneficiario": row['Tercero Nombre'],
@@ -1014,56 +933,39 @@
                 "Detalle Pago": row['Detalle del Pago'],
                 "Valor Pagado": row['Valor Pagado']
             }));
-
             const wb = XLSX.utils.book_new();
             const ws = XLSX.utils.json_to_sheet(exportData);
-
-            const wscols = [
-                {wch: 12}, {wch: 35}, {wch: 15}, {wch: 30}, {wch: 20}, {wch: 15}, {wch: 40}, {wch: 15}
-            ];
+            const wscols = [{wch: 12}, {wch: 35}, {wch: 15}, {wch: 30}, {wch: 20}, {wch: 15}, {wch: 40}, {wch: 15}];
             ws['!cols'] = wscols;
-
             XLSX.utils.book_append_sheet(wb, ws, "Transacciones");
             XLSX.writeFile(wb, "Reporte_Tesoreria_HUHMP.xlsx");
         }
 
-        // 2. Exportar a PDF (Institucional)
         function downloadPDF() {
             if (!filteredData || filteredData.length === 0) {
                 alert("No hay datos visibles para exportar");
                 return;
             }
-
             const { jsPDF } = window.jspdf;
-            const doc = new jsPDF('l', 'mm', 'a4'); // Horizontal (Landscape) para que quepan columnas
-
-            // --- HEADER INSTITUCIONAL ---
+            const doc = new jsPDF('l', 'mm', 'a4');
             doc.setFillColor(49, 39, 130); 
             doc.rect(0, 0, 297, 40, 'F');
-
-            if (base64Logo) {
-                doc.addImage(base64Logo, 'PNG', 10, 5, 50, 25); 
-            }
-
+            if (base64Logo) doc.addImage(base64Logo, 'PNG', 10, 5, 50, 25);
             doc.setTextColor(255, 255, 255);
             doc.setFont("helvetica", "bold");
             doc.setFontSize(16);
             doc.text("Reporte de Tesorería", 280, 15, { align: "right" });
-            
             doc.setFontSize(10);
             doc.setFont("helvetica", "normal");
             doc.text("ESE Hospital Universitario Hernando Moncaleano Perdomo", 280, 22, { align: "right" });
             doc.text("GD-SGI-M-005 | Vigencia 2025", 280, 28, { align: "right" });
-
             doc.setTextColor(100);
             doc.setFontSize(8);
             const dateStr = new Date().toLocaleString();
             doc.text(`Generado: ${dateStr} | Usuario: HUHMP`, 14, 46);
 
-            // --- TABLA DE DATOS FILTRADOS ---
             const tableColumn = ["Fecha", "Beneficiario", "Observación", "ID", "Banco", "Valor"];
             const tableRows = [];
-
             filteredData.forEach(row => {
                 const rowData = [
                     dateFormatter(row['Fecha del Comprobante']),
@@ -1081,22 +983,13 @@
                 body: tableRows,
                 startY: 50,
                 theme: 'striped',
-                headStyles: { 
-                    fillColor: [49, 39, 130], 
-                    textColor: [255, 255, 255],
-                    fontStyle: 'bold',
-                    fontSize: 9
-                },
+                headStyles: { fillColor: [49, 39, 130], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 9 },
                 bodyStyles: { fontSize: 8 },
                 alternateRowStyles: { fillColor: [243, 244, 246] }, 
                 margin: { top: 50 },
-                columnStyles: {
-                    1: { cellWidth: 70 }, // Beneficiario
-                    2: { cellWidth: 50 }  // Observación
-                }
+                columnStyles: { 1: { cellWidth: 70 }, 2: { cellWidth: 50 } }
             });
 
-            // --- PIE DE PÁGINA ---
             const pageCount = doc.internal.getNumberOfPages();
             for (let i = 1; i <= pageCount; i++) {
                 doc.setPage(i);
@@ -1105,11 +998,9 @@
                 doc.text('© 2025 ESE HUHMP - Documento controlado. Cualquier impresión es copia no controlada.', 148, 200, { align: 'center' });
                 doc.text(`Página ${i} de ${pageCount}`, 280, 200, { align: 'right' });
             }
-
             doc.save("Reporte_Tesoreria_HUHMP.pdf");
         }
 
-        // --- UTILIDADES ---
         function toggleLoading(show) {
             document.getElementById('loader').style.display = show ? 'block' : 'none';
             const btn = document.getElementById('searchForm').querySelector('button');
@@ -1122,10 +1013,8 @@
             let content = msg;
 
             if (showConfigInput) {
-                // Agregar input de configuración al mensaje
                 const currentUrl = localStorage.getItem('custom_api_url') || '';
-                const placeholder = currentUrl || 'Ej: http://192.168.1.15:3000';
-                
+                const placeholder = 'Ej: http://172.16.19.151:3000';
                 content += `
                     <div class="mt-4 p-3 bg-white rounded border border-red-200">
                         <label class="block text-xs font-bold text-gray-500 mb-1">URL del Servidor (API):</label>
@@ -1136,7 +1025,7 @@
                                 <i class="fas fa-save mr-1"></i> Guardar y Reintentar
                             </button>
                         </div>
-                        <p class="text-[10px] text-gray-400 mt-1">Esta dirección se guardará en su navegador.</p>
+                        <p class="text-[10px] text-gray-400 mt-1">Si está en la red del hospital, intente usar la IP 172.16.19.151.</p>
                     </div>
                 `;
             }
@@ -1151,7 +1040,6 @@
             el.style.display = 'block';
         }
 
-        // Modal Help Logic
         const helpModal = document.getElementById('helpModal');
         const closeModal = () => helpModal.classList.remove('active');
         const openModal = () => helpModal.classList.add('active');
@@ -1160,7 +1048,6 @@
         document.getElementById('closeHelp').onclick = closeModal;
         document.getElementById('closeHelpBtn').onclick = closeModal;
         helpModal.onclick = (e) => { if(e.target === helpModal) closeModal(); };
-
     </script>
 </body>
 </html>

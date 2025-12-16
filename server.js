@@ -6,52 +6,53 @@ const path = require('path');
 const app = express();
 
 // =============================================================================
-// 1. CONFIGURACIÓN DE RED Y PUERTO (Basado en tu IP 172.16.19.151)
+// 1. CONFIGURACIÓN DEL SERVIDOR WEB
 // =============================================================================
-const PORT = 3000;
-const HOST = '0.0.0.0'; // IMPORTANTE: '0.0.0.0' permite conexiones desde toda la red (Celulares, otros PC)
+// Puerto estándar. Si lo subes a la nube (Azure/AWS/Render), ellos asignan el puerto automáticamente en process.env.PORT
+const PORT = process.env.PORT || 3000; 
+const HOST = '0.0.0.0'; // Escuchar en todas las interfaces de red
 
 // =============================================================================
-// 2. CONFIGURACIÓN DE LA BASE DE DATOS (SOLUCIÓN REAL)
+// 2. CONFIGURACIÓN BASE DE DATOS (Mantenemos tus credenciales)
 // =============================================================================
-// Reemplaza estos datos con las credenciales reales de tu servidor de Base de Datos del Hospital
 const dbConfig = {
-    user: 'Reportes',             // Tu usuario de base de datos
-    password: 'R3p0rt3s2020*-', // Tu contraseña
-    server: 'localhost',    // IP del servidor de base de datos (o '172.16.19.151' si es el mismo)
-    database: 'NombreBD_Tesorería', // Nombre de la base de datos real
+    user: 'Reportes',
+    password: 'R3p0rt3s2020*-', // <--- ASEGÚRATE DE QUE ESTA CONTRASEÑA SEA CORRECTA EN EL SERVIDOR REAL
+    server: '172.16.0.42',          // 'localhost' es correcto si la BD está en la misma máquina que este script
+    database: 'NombreBD_Tesorería',
     options: {
-        encrypt: false, // Usar true si estás en Azure
-        trustServerCertificate: true // Usar true para desarrollo local/intranet
+        encrypt: false, 
+        trustServerCertificate: true
     }
 };
 
 // =============================================================================
-// 3. MIDDLEWARE (SEGURIDAD Y ACCESO)
+// 3. MIDDLEWARE Y SEGURIDAD
 // =============================================================================
-app.use(cors()); // Permite peticiones cruzadas (Vital para móviles)
+app.use(cors()); // Permite acceso desde cualquier origen (útil para móviles)
 app.use(express.json());
 
-// Sirve tus archivos estáticos (el index.html) directamente
-// Asegúrate de que index.html esté en la misma carpeta o en una carpeta 'public'
+// --- SOLUCIÓN CLAVE: SERVIR EL FRONTEND DESDE AQUÍ ---
+// Esto permite que al entrar a http://IP-DEL-SERVIDOR:3000 veas la página automáticamente.
+// No necesitas abrir el archivo index.html manualmente.
 app.use(express.static(path.join(__dirname, '.'))); 
 
 // =============================================================================
-// 4. API ENDPOINT (CONSULTA EN VIVO)
+// 4. API ENDPOINT (Rutas del Backend)
 // =============================================================================
 app.get('/api/voucher-transactions', async (req, res) => {
     const { rangeStart, rangeEnd } = req.query;
+
+    console.log(`📡 Consulta recibida: ${rangeStart} a ${rangeEnd}`); // Log para depuración en consola del servidor
 
     if (!rangeStart || !rangeEnd) {
         return res.status(400).json({ error: 'Se requieren fechas de inicio y fin.' });
     }
 
     try {
-        // Conexión real a la BD por cada petición (o usar Pool global para producción alta)
         let pool = await sql.connect(dbConfig);
 
-        // CONSULTA SQL REAL
-        // Ajusta los nombres de tablas y columnas según tu esquema real del ERP
+        // Consulta SQL optimizada
         const query = `
             SELECT 
                 FECHA_COMPROBANTE as 'Fecha del Comprobante',
@@ -77,14 +78,16 @@ app.get('/api/voucher-transactions', async (req, res) => {
         res.json({ data: result.recordset });
 
     } catch (err) {
-        console.error('Error de Base de Datos:', err);
+        console.error('❌ Error Base de Datos:', err.message); // Log detallado en servidor
         
-        // Manejo de error específico de conexión
         if (err.code === 'ESOCKET') {
-            return res.status(500).json({ error: 'No se pudo conectar al servidor de Base de Datos.' });
+            return res.status(500).json({ error: 'Fallo de conexión con SQL Server. Verifique credenciales y puerto 1433.' });
+        }
+        if (err.code === 'ELOGIN') {
+             return res.status(500).json({ error: 'Usuario o contraseña de Base de Datos incorrectos.' });
         }
         
-        res.status(500).json({ error: 'Error al consultar datos reales: ' + err.message });
+        res.status(500).json({ error: 'Error interno: ' + err.message });
     }
 });
 
@@ -93,9 +96,13 @@ app.get('/api/voucher-transactions', async (req, res) => {
 // =============================================================================
 app.listen(PORT, HOST, () => {
     console.log(`\n==================================================`);
-    console.log(`✅ SERVIDOR EN LÍNEA (MODO PRODUCCIÓN)`);
+    console.log(`✅ SERVIDOR EN LÍNEA - ENTORNO WEB HABILITADO`);
     console.log(`==================================================`);
-    console.log(`📡 Acceso Local:           http://localhost:${PORT}`);
-    console.log(`📲 Acceso Red (Celulares): http://172.16.19.151:${PORT}`); // Tu IP Fija
+    console.log(`📂 Modo: Producción / Web`);
+    console.log(`🔌 Puerto: ${PORT}`);
+    console.log(`\nPARA ACCEDER DESDE OTROS DISPOSITIVOS:`);
+    console.log(`   1. Asegúrese que este PC no tenga Firewall bloqueando el puerto ${PORT}.`);
+    console.log(`   2. Si está en la misma red WiFi, use: http://172.16.19.151:${PORT}`);
+    console.log(`   3. Si está FUERA de la red, necesitará una IP Pública o VPN.`);
     console.log(`==================================================\n`);
 });
