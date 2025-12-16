@@ -422,16 +422,19 @@
         document.getElementById('current-date').textContent = new Date().toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
         
         // =========================================================================================
-        // CONFIGURACIÓN DE CONEXIÓN DINÁMICA (Local Storage)
+        // CONFIGURACIÓN DE CONEXIÓN (IP DEL SERVIDOR)
         // =========================================================================================
-        // Intenta obtener la URL guardada del navegador. Si no existe, usa '' (relativa) o localhost por defecto.
+        // Configuración basada en tu IP: 172.16.19.151
+        // Puerto asumido: 3000 (Estándar de Node.js, cámbialo si usas otro)
+        const DEFAULT_API_URL = 'http://172.16.19.151:3000'; 
+
         function getApiBaseUrl() {
-            // Prioridad: 1. Configuración guardada por el usuario
+            // 1. Si el usuario guardó una URL manual, usarla.
             const savedUrl = localStorage.getItem('custom_api_url');
-            if (savedUrl) return savedUrl.replace(/\/$/, ''); // Quitar slash final si existe
+            if (savedUrl) return savedUrl.replace(/\/$/, '');
             
-            // Prioridad 2: Configuración por defecto (vacío = relativa al dominio actual)
-            return ''; 
+            // 2. Si no, usar la IP fija de tu servidor.
+            return DEFAULT_API_URL; 
         }
 
         // Función para guardar la nueva URL ingresada por el usuario en caso de error
