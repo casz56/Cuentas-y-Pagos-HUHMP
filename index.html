@@ -117,6 +117,24 @@
             opacity: 1;
         }
 
+        /* Checkbox Personalizado en Dropdown */
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            padding: 0.5rem 0.75rem;
+            cursor: pointer;
+            transition: background-color 0.15s;
+        }
+        .checkbox-item:hover {
+            background-color: #f3f4f6;
+        }
+        .checkbox-item input[type="checkbox"] {
+            margin-right: 0.75rem;
+            accent-color: var(--color-secundario);
+            width: 1rem;
+            height: 1rem;
+        }
+
         /* Animaciones */
         .loader {
             border: 3px solid #f3f3f3;
@@ -192,7 +210,7 @@
 
             <!-- Información Usuario/Fecha -->
             <div class="flex flex-col gap-1 z-10 text-right text-xs md:text-sm text-blue-100">
-                <p class="font-semibold"><i class="fas fa-user-circle mr-1"></i> Usuario: Reportes</p>
+                <p class="font-semibold"><i class="fas fa-user-circle mr-1"></i> Usuario: HUHMP</p>
                 <p id="current-date" class="opacity-80">Fecha Actual</p>
             </div>
         </header>
@@ -249,7 +267,7 @@
             </div>
 
             <!-- FILTROS LOCALES CONCATENADOS -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 p-4 bg-slate-50 rounded-lg border border-slate-200">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 p-4 bg-slate-50 rounded-lg border border-slate-200 z-40 relative">
                 <!-- Búsqueda General -->
                 <div class="md:col-span-2">
                     <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Búsqueda Rápida (ID o Nombre)</label>
@@ -258,12 +276,20 @@
                         <i class="fas fa-search absolute left-3 top-2.5 text-slate-400"></i>
                     </div>
                 </div>
-                <!-- Filtro por Tercero -->
-                <div>
-                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Filtrar por Tercero</label>
-                    <select id="thirdPartyFilter" class="input-institucional">
-                        <option value="">Todos los Terceros</option>
-                    </select>
+                <!-- Filtro por Observación (MULTISELECCIÓN) -->
+                <div class="relative">
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Filtrar por Observación (Múltiple)</label>
+                    
+                    <!-- Botón Dropdown -->
+                    <button id="multiSelectBtn" type="button" class="input-institucional text-left flex justify-between items-center bg-white cursor-pointer hover:border-blue-400">
+                        <span id="multiSelectLabel" class="truncate text-sm text-gray-700">Todas las Observaciones</span>
+                        <i class="fas fa-chevron-down text-gray-400 text-xs"></i>
+                    </button>
+
+                    <!-- Menú Desplegable -->
+                    <div id="multiSelectDropdown" class="hidden absolute top-full left-0 w-full bg-white border border-slate-200 rounded-md shadow-xl mt-1 max-h-60 overflow-y-auto z-50">
+                        <!-- Las opciones se inyectan aquí -->
+                    </div>
                 </div>
             </div>
             
@@ -281,6 +307,10 @@
                                 <th class="px-6 py-3 text-left sortable-header" onclick="handleSort('ID Tercero')">
                                     ID Tercero <i id="icon-ID Tercero" class="fas fa-sort sort-icon"></i>
                                 </th>
+                                <!-- NUEVA COLUMNA OBSERVACIÓN -->
+                                <th class="px-6 py-3 text-left sortable-header" onclick="handleSort('ObservacionCalculada')">
+                                    Observación <i id="icon-ObservacionCalculada" class="fas fa-sort sort-icon"></i>
+                                </th>
                                 <th class="px-6 py-3 text-left sortable-header" onclick="handleSort('Entidad Bancaria')">
                                     Banco <i id="icon-Entidad Bancaria" class="fas fa-sort sort-icon"></i>
                                 </th>
@@ -297,7 +327,7 @@
                         </tbody>
                         <tfoot class="bg-slate-50 sticky bottom-0 z-10 font-bold border-t border-slate-200">
                             <tr>
-                                <td colspan="5" class="px-6 py-3 text-right text-slate-700">TOTAL ACUMULADO:</td>
+                                <td colspan="6" class="px-6 py-3 text-right text-slate-700">TOTAL ACUMULADO:</td>
                                 <td class="px-6 py-3 text-right text-principal text-lg" id="totalAmount">$0</td>
                             </tr>
                         </tfoot>
@@ -374,9 +404,11 @@
                 </div>
                 <ul class="list-disc list-inside space-y-2 ml-1">
                     <li>Use el panel superior para seleccionar el rango de fechas.</li>
-                    <li><strong>Filtros Concatenados:</strong> La barra de búsqueda y el filtro de terceros trabajan juntos. Las gráficas y totales se actualizan instantáneamente para reflejar su selección.</li>
-                    <li><strong>Ordenamiento:</strong> Haga clic en los encabezados de la tabla (Fecha, Valor, etc.) para ordenar ascendente o descendentemente.</li>
-                    <li><strong>Exportación:</strong> Puede descargar en Excel o PDF exactamente lo que está viendo en pantalla (filtros aplicados).</li>
+                    <li><strong>Nueva Columna Observación:</strong> Se genera automáticamente según el tipo de servicio o proveedor.</li>
+                    <li><strong>Filtro por Observación Múltiple:</strong> Ahora puede seleccionar varias categorías (ej. Honorarios y Mantenimiento) al mismo tiempo desplegando la lista.</li>
+                    <li><strong>Filtros Concatenados:</strong> La barra de búsqueda y el filtro de observación trabajan juntos.</li>
+                    <li><strong>Ordenamiento:</strong> Haga clic en los encabezados de la tabla.</li>
+                    <li><strong>Exportación:</strong> Puede descargar en Excel o PDF exactamente lo que está viendo en pantalla.</li>
                 </ul>
                 <div class="text-right mt-4">
                     <button id="closeHelpBtn" class="bg-principal text-white px-4 py-2 rounded text-xs font-bold hover:bg-blue-900 transition">Entendido</button>
@@ -419,6 +451,57 @@
         }
         loadLogo(); 
 
+        // --- ALGORITMO PARA LA COLUMNA OBSERVACIÓN (COLUMNA D) ---
+        function calcularObservacion(row) {
+            const tercero = (row['Tercero Nombre'] || '').toUpperCase();
+            const detalle = (row['Detalle del Pago'] || '').toUpperCase();
+
+            // Reglas de Clasificación Automática (Basadas en el archivo Estructura.xlsx)
+            
+            // 1. RESONANCIAS / IMAGENES
+            if (tercero.includes("RAYOS X") || tercero.includes("RESONANCIA")) {
+                return "SERVICIO DE RESONANCIAS";
+            }
+            
+            // 2. MATERIAL MÉDICO
+            if (tercero.includes("DOTACIONES MEDICAS") || 
+                tercero.includes("BOSTON SCIENTIFIC") || 
+                detalle.includes("MATERIAL MEDICO") ||
+                tercero.includes("SUMINISTROS D&M")) {
+                return "MATERIAL MÉDICO QUIRÚRGICO";
+            }
+
+            // 3. MEDICAMENTOS
+            if (tercero.includes("VITALIS") || 
+                tercero.includes("BIOSPIFAR") || 
+                tercero.includes("DEPÓSITO DE DROGAS") ||
+                detalle.includes("MEDICAMENTOS")) {
+                return "MEDICAMENTOS";
+            }
+
+            // 4. HONORARIOS / AGREMIACIONES / ESPECIALISTAS
+            if (tercero.includes("SINDICATO GREMIAL") || tercero.includes("ASEMHO")) {
+                return "ASISTENCIAL - GREMIO";
+            }
+            if (tercero.includes("SERVICIOS INTEGRALES EN MEDICINA") || detalle.includes("URGENCIOLOGO")) {
+                return "MÉDICO ESPECIALISTA - URGENCIOLOGO";
+            }
+            if (tercero.includes("HEMATOONCOLOGO") || tercero.includes("HEMATOONCOLOGÍA")) {
+                return "ESP. HEMATOONCOLOGÍA PEDIÁTRICA";
+            }
+
+            // 5. SERVICIOS GENERALES / OTROS
+            if (tercero.includes("ELECTRIFICADORA")) return "SERVICIOS PÚBLICOS - ENERGÍA";
+            if (tercero.includes("AGUAS DEL HUILA")) return "SERVICIOS PÚBLICOS - ACUEDUCTO";
+            
+            // Clasificación por defecto si no cae en reglas anteriores
+            if (detalle.includes("HONORARIOS")) return "HONORARIOS";
+            if (detalle.includes("SUMINISTRO")) return "SUMINISTROS";
+            if (detalle.includes("MANTENIMIENTO")) return "MANTENIMIENTO";
+
+            return "OTROS PAGOS"; // Valor por defecto
+        }
+
         // --- MANEJO DEL FORMULARIO ---
         document.getElementById('searchForm').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -428,7 +511,10 @@
             
             // Limpiar filtros locales
             document.getElementById('searchInput').value = '';
-            document.getElementById('thirdPartyFilter').innerHTML = '<option value="">Todos los Terceros</option>';
+            // Reset MultiSelect
+            const dropdown = document.getElementById('multiSelectDropdown');
+            dropdown.innerHTML = '';
+            updateMultiSelectLabel();
             
             statusEl.classList.add('hidden');
             document.getElementById('section-resumen').classList.add('hidden');
@@ -445,10 +531,15 @@
                 
                 if(!result || !result.data) throw new Error('Formato de datos incorrecto');
 
-                globalData = result.data;
+                // Procesar Data Global y Calcular Observación
+                globalData = result.data.map(item => ({
+                    ...item,
+                    'ObservacionCalculada': calcularObservacion(item) // Inyectar nueva columna
+                }));
+
                 filteredData = [...globalData]; // Inicializar filtrado
 
-                populateThirdPartyFilter(globalData);
+                populateMultiSelect(globalData);
                 
                 // Aplicar filtros iniciales (aunque estén vacíos) y renderizar todo
                 applyLocalFilters();
@@ -473,36 +564,110 @@
             }
         });
 
-        // --- LÓGICA DE FILTROS LOCALES (CONCATENADOS) ---
+        // --- LÓGICA DE FILTROS LOCALES (CONCATENADOS & MULTIPLE) ---
         
-        // 1. Llenar el Select de Terceros
-        function populateThirdPartyFilter(data) {
-            const select = document.getElementById('thirdPartyFilter');
-            const uniqueNames = [...new Set(data.map(item => item['Tercero Nombre']))].filter(Boolean).sort();
-            
-            let opts = '<option value="">Todos los Terceros</option>';
-            uniqueNames.forEach(name => {
-                opts += `<option value="${name}">${name}</option>`;
+        // 1. Manejo del Dropdown
+        const multiSelectBtn = document.getElementById('multiSelectBtn');
+        const multiSelectDropdown = document.getElementById('multiSelectDropdown');
+        
+        multiSelectBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            multiSelectDropdown.classList.toggle('hidden');
+        });
+
+        // Cerrar al hacer clic fuera
+        document.addEventListener('click', (e) => {
+            if (!multiSelectBtn.contains(e.target) && !multiSelectDropdown.contains(e.target)) {
+                multiSelectDropdown.classList.add('hidden');
+            }
+        });
+
+        // 2. Llenar el Multi-Select con Checkboxes
+        function populateMultiSelect(data) {
+            const uniqueObs = [...new Set(data.map(item => item['ObservacionCalculada']))].filter(Boolean).sort();
+            multiSelectDropdown.innerHTML = '';
+
+            // Opción "Seleccionar Todos"
+            const allDiv = document.createElement('div');
+            allDiv.className = 'checkbox-item font-bold border-b border-gray-100';
+            allDiv.innerHTML = `<input type="checkbox" id="selectAllObs" checked> <label for="selectAllObs" class="cursor-pointer w-full">Seleccionar Todos</label>`;
+            multiSelectDropdown.appendChild(allDiv);
+
+            // Listener "Seleccionar Todos"
+            const allCheckbox = allDiv.querySelector('input');
+            allCheckbox.addEventListener('change', (e) => {
+                const checkboxes = multiSelectDropdown.querySelectorAll('input[type="checkbox"]:not(#selectAllObs)');
+                checkboxes.forEach(cb => cb.checked = e.target.checked);
+                updateMultiSelectLabel();
+                applyLocalFilters();
             });
-            select.innerHTML = opts;
+
+            // Opciones Individuales
+            uniqueObs.forEach(obs => {
+                const div = document.createElement('div');
+                div.className = 'checkbox-item';
+                // Generar ID único seguro
+                const safeId = 'obs-' + obs.replace(/[^a-z0-9]/gi, '_');
+                div.innerHTML = `<input type="checkbox" value="${obs}" id="${safeId}" checked> <label for="${safeId}" class="cursor-pointer w-full text-sm text-gray-600 truncate">${obs}</label>`;
+                multiSelectDropdown.appendChild(div);
+
+                // Listener individual
+                const cb = div.querySelector('input');
+                cb.addEventListener('change', () => {
+                    // Si alguno se desmarca, desmarcar "Todos"
+                    if (!cb.checked) allCheckbox.checked = false;
+                    // Si todos se marcan, marcar "Todos"
+                    const allOpts = multiSelectDropdown.querySelectorAll('input[type="checkbox"]:not(#selectAllObs)');
+                    const allChecked = Array.from(allOpts).every(c => c.checked);
+                    if(allChecked) allCheckbox.checked = true;
+
+                    updateMultiSelectLabel();
+                    applyLocalFilters();
+                });
+            });
+            updateMultiSelectLabel();
         }
 
-        // 2. Función Maestra de Filtrado
+        function updateMultiSelectLabel() {
+            const checkboxes = Array.from(multiSelectDropdown.querySelectorAll('input[type="checkbox"]:not(#selectAllObs)'));
+            const checkedCount = checkboxes.filter(cb => cb.checked).length;
+            const label = document.getElementById('multiSelectLabel');
+
+            if (checkedCount === 0) {
+                label.textContent = "Ninguna seleccionada";
+                label.classList.add('text-gray-400');
+            } else if (checkedCount === checkboxes.length) {
+                label.textContent = "Todas las Observaciones";
+                label.classList.remove('text-gray-400');
+            } else {
+                label.textContent = `${checkedCount} seleccionadas`;
+                label.classList.remove('text-gray-400');
+            }
+        }
+
+        // 3. Función Maestra de Filtrado
         function applyLocalFilters() {
             const searchText = document.getElementById('searchInput').value.toLowerCase().trim();
-            const selectedThirdParty = document.getElementById('thirdPartyFilter').value;
+            
+            // Obtener lista de observaciones seleccionadas
+            const checkboxes = multiSelectDropdown.querySelectorAll('input[type="checkbox"]:not(#selectAllObs)');
+            const selectedObservations = Array.from(checkboxes)
+                .filter(cb => cb.checked)
+                .map(cb => cb.value);
 
             // Filtrar desde la data global
             filteredData = globalData.filter(row => {
                 const name = (row['Tercero Nombre'] || '').toLowerCase();
                 const id = (row['ID Tercero'] || '').toString().toLowerCase();
-                const realName = row['Tercero Nombre'];
+                const realObs = row['ObservacionCalculada'];
                 
                 // Filtro Texto (ID o Nombre) - Búsqueda aproximada
                 const matchesSearch = !searchText || name.includes(searchText) || id.includes(searchText);
                 
-                // Filtro Select - Coincidencia exacta
-                const matchesSelect = !selectedThirdParty || realName === selectedThirdParty;
+                // Filtro Multi-Select - Verifica si la observación está en la lista de seleccionados
+                // Si no hay observaciones seleccionadas, no muestra nada (o muestra todo si se prefiere esa lógica, pero visualmente "ninguna" implica vacio)
+                // Aquí: Si hay 0 seleccionados, asumimos que el usuario limpió el filtro -> no mostrar nada.
+                const matchesSelect = selectedObservations.includes(realObs);
 
                 // CONCATENACIÓN: Ambos deben ser verdaderos (AND Logic)
                 return matchesSearch && matchesSelect;
@@ -518,9 +683,8 @@
             renderCharts(filteredData);
         }
 
-        // Listeners para filtros
+        // Listener para búsqueda de texto
         document.getElementById('searchInput').addEventListener('input', applyLocalFilters);
-        document.getElementById('thirdPartyFilter').addEventListener('change', applyLocalFilters);
 
         // --- LÓGICA DE ORDENAMIENTO ---
 
@@ -589,7 +753,7 @@
             updateSortIcons();
 
             if (data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 text-slate-400">No se encontraron datos con los filtros actuales.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center py-8 text-slate-400">No se encontraron datos con los filtros actuales.</td></tr>';
                 document.getElementById('totalAmount').textContent = '$0';
                 document.getElementById('recordCountLabel').textContent = '0 registros.';
                 return;
@@ -608,6 +772,8 @@
                     <td class="px-6 py-3 whitespace-nowrap text-xs text-slate-500 font-medium">${dateFormatter(row['Fecha del Comprobante'])}</td>
                     <td class="px-6 py-3 font-semibold text-slate-700 truncate max-w-xs" title="${row['Tercero Nombre']}">${row['Tercero Nombre'] || 'N/A'}</td>
                     <td class="px-6 py-3 text-slate-500 font-mono text-xs">${row['ID Tercero'] || ''}</td>
+                    <!-- CELDA OBSERVACIÓN -->
+                    <td class="px-6 py-3 text-secundario font-bold text-xs uppercase truncate max-w-xs" title="${row['ObservacionCalculada']}">${row['ObservacionCalculada']}</td>
                     <td class="px-6 py-3 text-slate-500 text-xs">${row['Entidad Bancaria'] || ''}</td>
                     <td class="px-6 py-3 text-slate-500 text-xs truncate max-w-xs" title="${row['Detalle del Pago']}">${row['Detalle del Pago'] || ''}</td>
                     <td class="px-6 py-3 text-right font-bold text-slate-700">${currencyFormatter.format(val)}</td>
@@ -780,6 +946,7 @@
                 "Fecha": dateFormatter(row['Fecha del Comprobante']),
                 "Beneficiario": row['Tercero Nombre'],
                 "ID Tercero": row['ID Tercero'],
+                "Observación": row['ObservacionCalculada'],
                 "Banco": row['Entidad Bancaria'],
                 "No. Cuenta": row['No. Cuenta Banco'],
                 "Detalle Pago": row['Detalle del Pago'],
@@ -790,7 +957,7 @@
             const ws = XLSX.utils.json_to_sheet(exportData);
 
             const wscols = [
-                {wch: 12}, {wch: 35}, {wch: 15}, {wch: 20}, {wch: 15}, {wch: 40}, {wch: 15}
+                {wch: 12}, {wch: 35}, {wch: 15}, {wch: 30}, {wch: 20}, {wch: 15}, {wch: 40}, {wch: 15}
             ];
             ws['!cols'] = wscols;
 
@@ -806,11 +973,11 @@
             }
 
             const { jsPDF } = window.jspdf;
-            const doc = new jsPDF();
+            const doc = new jsPDF('l', 'mm', 'a4'); // Horizontal (Landscape) para que quepan columnas
 
             // --- HEADER INSTITUCIONAL ---
             doc.setFillColor(49, 39, 130); 
-            doc.rect(0, 0, 210, 40, 'F');
+            doc.rect(0, 0, 297, 40, 'F');
 
             if (base64Logo) {
                 doc.addImage(base64Logo, 'PNG', 10, 5, 50, 25); 
@@ -819,26 +986,27 @@
             doc.setTextColor(255, 255, 255);
             doc.setFont("helvetica", "bold");
             doc.setFontSize(16);
-            doc.text("Reporte de Tesorería", 200, 15, { align: "right" });
+            doc.text("Reporte de Tesorería", 280, 15, { align: "right" });
             
             doc.setFontSize(10);
             doc.setFont("helvetica", "normal");
-            doc.text("ESE Hospital Universitario Hernando Moncaleano Perdomo", 200, 22, { align: "right" });
-            doc.text("GD-SGI-M-005 | Vigencia 2025", 200, 28, { align: "right" });
+            doc.text("ESE Hospital Universitario Hernando Moncaleano Perdomo", 280, 22, { align: "right" });
+            doc.text("GD-SGI-M-005 | Vigencia 2025", 280, 28, { align: "right" });
 
             doc.setTextColor(100);
             doc.setFontSize(8);
             const dateStr = new Date().toLocaleString();
-            doc.text(`Generado: ${dateStr} | Usuario: Reportes`, 14, 46);
+            doc.text(`Generado: ${dateStr} | Usuario: HUHMP`, 14, 46);
 
             // --- TABLA DE DATOS FILTRADOS ---
-            const tableColumn = ["Fecha", "Beneficiario", "ID Tercero", "Banco", "Valor"];
+            const tableColumn = ["Fecha", "Beneficiario", "Observación", "ID", "Banco", "Valor"];
             const tableRows = [];
 
             filteredData.forEach(row => {
                 const rowData = [
                     dateFormatter(row['Fecha del Comprobante']),
                     row['Tercero Nombre'] || '',
+                    row['ObservacionCalculada'] || '',
                     row['ID Tercero'] || '',
                     row['Entidad Bancaria'] || '',
                     currencyFormatter.format(row['Valor Pagado'] || 0)
@@ -859,7 +1027,11 @@
                 },
                 bodyStyles: { fontSize: 8 },
                 alternateRowStyles: { fillColor: [243, 244, 246] }, 
-                margin: { top: 50 }
+                margin: { top: 50 },
+                columnStyles: {
+                    1: { cellWidth: 70 }, // Beneficiario
+                    2: { cellWidth: 50 }  // Observación
+                }
             });
 
             // --- PIE DE PÁGINA ---
@@ -868,8 +1040,8 @@
                 doc.setPage(i);
                 doc.setFontSize(8);
                 doc.setTextColor(150);
-                doc.text('© 2025 ESE HUHMP - Documento controlado. Cualquier impresión es copia no controlada.', 105, 290, { align: 'center' });
-                doc.text(`Página ${i} de ${pageCount}`, 200, 290, { align: 'right' });
+                doc.text('© 2025 ESE HUHMP - Documento controlado. Cualquier impresión es copia no controlada.', 148, 200, { align: 'center' });
+                doc.text(`Página ${i} de ${pageCount}`, 280, 200, { align: 'right' });
             }
 
             doc.save("Reporte_Tesoreria_HUHMP.pdf");
