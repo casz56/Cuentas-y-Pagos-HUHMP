@@ -406,8 +406,8 @@
                     <li>Use el panel superior para seleccionar el rango de fechas.</li>
                     <li><strong>Nueva Columna Observación:</strong> Se genera automáticamente según el tipo de servicio o proveedor.</li>
                     <li><strong>Filtro por Observación Múltiple:</strong> Ahora puede seleccionar varias categorías (ej. Honorarios y Mantenimiento) al mismo tiempo desplegando la lista.</li>
+                    <li><strong>Gráficos Interactivos:</strong> Haga clic en una sección del gráfico circular para filtrar automáticamente toda la información por ese proveedor.</li>
                     <li><strong>Filtros Concatenados:</strong> La barra de búsqueda y el filtro de observación trabajan juntos.</li>
-                    <li><strong>Ordenamiento:</strong> Haga clic en los encabezados de la tabla.</li>
                     <li><strong>Exportación:</strong> Puede descargar en Excel o PDF exactamente lo que está viendo en pantalla.</li>
                 </ul>
                 <div class="text-right mt-4">
@@ -422,6 +422,13 @@
         // --- CONFIGURACIÓN ---
         document.getElementById('current-date').textContent = new Date().toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
         
+        // =========================================================================================
+        // CONFIGURACIÓN DE CONEXIÓN
+        // =========================================================================================
+        // NOTA: Para producción real, cambia 'localhost' por la IP de tu servidor.
+        const API_BASE_URL = 'http://172.16.19.151:3000'; 
+        // =========================================================================================
+
         const currencyFormatter = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 });
         const dateFormatter = (d) => d ? new Date(d).toLocaleDateString('es-ES') : '';
 
@@ -502,6 +509,36 @@
             return "OTROS PAGOS"; // Valor por defecto
         }
 
+        // --- GENERADOR DE DATOS MOCK (RESPALDO CUANDO FALLA EL SERVER) ---
+        function generateMockData() {
+            const proveedores = [
+                { nombre: "VITALIS S.A.C.I.", id: "900123456", tipo: "MEDICAMENTOS" },
+                { nombre: "SINDICATO GREMIAL DE PROFESIONALES", id: "800987654", tipo: "ASISTENCIAL - GREMIO" },
+                { nombre: "ELECTRIFICADORA DEL HUILA", id: "891180000", tipo: "SERVICIOS PÚBLICOS - ENERGÍA" },
+                { nombre: "RAYOS X DEL HUILA S.A.S.", id: "900555666", tipo: "SERVICIO DE RESONANCIAS" },
+                { nombre: "DOTACIONES MEDICAS DEL SUR", id: "900777888", tipo: "MATERIAL MÉDICO QUIRÚRGICO" }
+            ];
+            
+            const data = [];
+            const today = new Date();
+            
+            for(let i=0; i < 50; i++) {
+                const prov = proveedores[Math.floor(Math.random() * proveedores.length)];
+                const fecha = new Date(today);
+                fecha.setDate(today.getDate() - Math.floor(Math.random() * 60)); // Últimos 60 días
+                
+                data.push({
+                    "Fecha del Comprobante": fecha.toISOString().split('T')[0],
+                    "Tercero Nombre": prov.nombre,
+                    "ID Tercero": prov.id,
+                    "Entidad Bancaria": Math.random() > 0.5 ? "BANCOLOMBIA" : "DAVIVIENDA",
+                    "Detalle del Pago": `PAGO FACTURA ${Math.floor(Math.random() * 10000)} - ${prov.tipo}`,
+                    "Valor Pagado": Math.floor(Math.random() * 10000000) + 500000
+                });
+            }
+            return data;
+        }
+
         // --- MANEJO DEL FORMULARIO ---
         document.getElementById('searchForm').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -522,44 +559,43 @@
             
             toggleLoading(true);
 
+            let rawData = [];
+            let isMock = false;
+
             try {
-                const response = await fetch(`http://172.16.19.151:3000/api/voucher-transactions?rangeStart=${start}&rangeEnd=${end}`);
+                // INTENTO 1: Conectar al servidor real
+                const response = await fetch(`${API_BASE_URL}/api/voucher-transactions?rangeStart=${start}&rangeEnd=${end}`);
                 
                 if (!response.ok) throw new Error('Error en la respuesta del servidor');
-                
                 const result = await response.json();
-                
                 if(!result || !result.data) throw new Error('Formato de datos incorrecto');
+                
+                rawData = result.data;
+                showStatus(`Se cargaron <strong>${rawData.length}</strong> registros exitosamente desde el servidor.`, 'success');
 
-                // Procesar Data Global y Calcular Observación
-                globalData = result.data.map(item => ({
+            } catch (error) {
+                // FALLBACK: Si falla (Failed to fetch), usar datos de ejemplo para demostración
+                console.warn("Error de conexión, cargando modo demo:", error);
+                rawData = generateMockData();
+                isMock = true;
+                
+                let msg = `<strong>Nota:</strong> No se detectó conexión al servidor local (${API_BASE_URL}).<br>
+                           Se están mostrando <strong>DATOS DE EJEMPLO (Simulados)</strong> para demostración.`;
+                showStatus(msg, 'warning'); // Usamos estilo amarillo/warning
+            } finally {
+                // PROCESAMIENTO COMÚN (sea real o mock)
+                globalData = rawData.map(item => ({
                     ...item,
                     'ObservacionCalculada': calcularObservacion(item) // Inyectar nueva columna
                 }));
 
-                filteredData = [...globalData]; // Inicializar filtrado
-
+                filteredData = [...globalData]; 
                 populateMultiSelect(globalData);
-                
-                // Aplicar filtros iniciales (aunque estén vacíos) y renderizar todo
                 applyLocalFilters();
                 
                 document.getElementById('section-resumen').classList.remove('hidden');
                 document.getElementById('section-graficas').classList.remove('hidden');
                 
-                showStatus(`Se cargaron <strong>${globalData.length}</strong> registros exitosamente.`, 'success');
-
-            } catch (error) {
-                console.error("Error capturado:", error);
-                let userMsg = 'Error desconocido al cargar datos.';
-                
-                if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
-                    userMsg = `<strong>No se puede conectar al servidor.</strong><br>Asegúrese de ejecutar <code>node server.js</code> en su terminal.`;
-                } else {
-                    userMsg = `Error: ${error.message}`;
-                }
-                showStatus(userMsg, 'error');
-            } finally {
                 toggleLoading(false);
             }
         });
@@ -665,8 +701,6 @@
                 const matchesSearch = !searchText || name.includes(searchText) || id.includes(searchText);
                 
                 // Filtro Multi-Select - Verifica si la observación está en la lista de seleccionados
-                // Si no hay observaciones seleccionadas, no muestra nada (o muestra todo si se prefiere esa lógica, pero visualmente "ninguna" implica vacio)
-                // Aquí: Si hay 0 seleccionados, asumimos que el usuario limpió el filtro -> no mostrar nada.
                 const matchesSelect = selectedObservations.includes(realObs);
 
                 // CONCATENACIÓN: Ambos deben ser verdaderos (AND Logic)
@@ -791,13 +825,11 @@
 
         // --- LÓGICA DE GRÁFICAS ---
         function renderCharts(data) {
-            // Nota: Aquí data ya viene filtrada por applyLocalFilters
             updatePieChart(data);
             updateBarChart(data, document.getElementById('barChartFilter').value);
         }
 
         document.getElementById('barChartFilter').addEventListener('change', (e) => {
-            // Al cambiar el filtro de la gráfica, usamos filteredData para mantener consistencia con la tabla
             if (filteredData.length > 0) updateBarChart(filteredData, e.target.value);
         });
 
@@ -829,12 +861,34 @@
                         data: values,
                         backgroundColor: chartColors,
                         borderWidth: 2,
-                        borderColor: '#ffffff'
+                        borderColor: '#ffffff',
+                        hoverOffset: 10
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    onHover: (event, chartElement) => {
+                        event.native.target.style.cursor = chartElement[0] ? 'pointer' : 'default';
+                    },
+                    onClick: (event, elements) => {
+                        if (elements.length > 0) {
+                            const index = elements[0].index;
+                            const label = labels[index];
+
+                            if (label === 'Otros') {
+                                showStatus('La categoría "Otros" agrupa varios proveedores. Utilice la tabla para buscar.', 'warning');
+                                return;
+                            }
+
+                            // Aplicar Filtro Visual
+                            document.getElementById('searchInput').value = label;
+                            applyLocalFilters();
+                            
+                            showStatus(`Filtrando dashboard por proveedor: <strong>${label}</strong>`, 'success');
+                            document.getElementById('section-resumen').scrollIntoView({ behavior: 'smooth' });
+                        }
+                    },
                     plugins: {
                         legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10, family: 'Inter' } } },
                         tooltip: {
@@ -854,8 +908,6 @@
 
         function updateBarChart(data, groupBy) {
             const ctx = document.getElementById('barChart').getContext('2d');
-            
-            // Usamos un objeto para agrupar primero
             const aggregatedData = {};
 
             data.forEach(item => {
@@ -863,23 +915,19 @@
                 if (!dateStr) return;
                 
                 const dateObj = new Date(dateStr);
-                
                 let key, label, sortValue;
 
                 if (groupBy === 'day') {
-                    // Clave única: YYYY-MM-DD
                     key = dateObj.toISOString().split('T')[0];
                     label = dateObj.toLocaleDateString('es-ES');
                     sortValue = dateObj.getTime();
                 } else if (groupBy === 'month') {
-                    // Clave única: YYYY-MM
                     const year = dateObj.getFullYear();
-                    const month = dateObj.getMonth(); // 0-11
+                    const month = dateObj.getMonth(); 
                     key = `${year}-${month}`;
                     label = dateObj.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
-                    // Valor de ordenamiento: Timestamp del primer día del mes
                     sortValue = new Date(year, month, 1).getTime();
-                } else { // year
+                } else { 
                     key = dateObj.getFullYear().toString();
                     label = key;
                     sortValue = dateObj.getFullYear();
@@ -891,13 +939,9 @@
                 aggregatedData[key].value += (item['Valor Pagado'] || 0);
             });
 
-            // Convertir a array y ordenar cronológicamente
             const sortedArray = Object.values(aggregatedData).sort((a, b) => a.sortValue - b.sortValue);
 
-            const labels = sortedArray.map(item => {
-                // Capitalizar primera letra para meses (ej: "enero 2025" -> "Enero 2025")
-                return item.label.charAt(0).toUpperCase() + item.label.slice(1);
-            });
+            const labels = sortedArray.map(item => item.label.charAt(0).toUpperCase() + item.label.slice(1));
             const values = sortedArray.map(item => item.value);
 
             if (barChartInstance) barChartInstance.destroy();
@@ -1058,9 +1102,10 @@
         function showStatus(msg, type) {
             const el = document.getElementById('statusMessage');
             el.innerHTML = msg; 
-            el.classList.remove('hidden', 'bg-green-50', 'text-green-800', 'border-green-500', 'bg-red-50', 'text-red-800', 'border-red-500');
+            el.classList.remove('hidden', 'bg-green-50', 'text-green-800', 'border-green-500', 'bg-red-50', 'text-red-800', 'border-red-500', 'bg-yellow-50', 'text-yellow-800', 'border-yellow-500');
             
             if (type === 'success') el.classList.add('bg-green-50', 'text-green-800', 'border-green-500');
+            else if (type === 'warning') el.classList.add('bg-yellow-50', 'text-yellow-800', 'border-yellow-500');
             else el.classList.add('bg-red-50', 'text-red-800', 'border-red-500');
             
             el.style.display = 'block';
