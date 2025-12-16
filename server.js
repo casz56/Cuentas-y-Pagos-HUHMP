@@ -1,113 +1,116 @@
+/**
+ * Backend para Visor de Tesorería (Migración de Power BI a Node.js)
+ *
+ * Dependencias necesarias:
+ * npm install express mssql cors
+ *
+ * Ejecución:
+ * node server.js
+ */
+
 const express = require('express');
-const cors = require('cors');
 const sql = require('mssql');
-const path = require('path');
+const cors = require('cors');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = 3000;
 
-// =============================================================================
-// 1. CONFIGURACIÓN DE BASE DE DATOS
-// =============================================================================
-// ⚠️ IMPORTANTE: Asegúrate de que estos datos son los REALES de tu servidor SQL
-const dbConfig = {
-    user: 'sa',             
-    password: 'TuPasswordFuerte', 
-    server: 'localhost',          
-    database: 'NombreBD_Tesorería',
-    options: {
-        encrypt: false, 
-        trustServerCertificate: true, // Crucial para evitar errores de certificado SSL local
-        enableArithAbort: true
-    }
-};
-
-// =============================================================================
-// 2. MIDDLEWARE
-// =============================================================================
-app.use(cors()); 
+// Habilitar CORS para permitir solicitudes desde el frontend (localhost:port)
+app.use(cors());
 app.use(express.json());
 
-// Sirve el Frontend (index.html) automáticamente
-app.use(express.static(path.join(__dirname, '.')));
-
-// =============================================================================
-// 3. FUNCIÓN DE CONEXIÓN ROBUSTA (PATRÓN SINGLETON)
-// =============================================================================
-const connectDB = async () => {
-    try {
-        // Si ya estamos conectados, no hacer nada
-        if (sql.connected) return;
-
-        // Cerrar cualquier conexión pendiente por si acaso
-        await sql.close();
-        
-        // Crear nueva conexión
-        await sql.connect(dbConfig);
-        console.log('✅ Base de Datos Conectada Exitosamente');
-    } catch (err) {
-        console.error('❌ Error de conexión BD:', err.message);
-        console.log('⚠️  Verifique credenciales en dbConfig (línea 13).');
+// 1. Configuración de la conexión SQL (Credenciales basadas en la información proporcionada)
+const dbConfig = {
+    user: 'Reportes',          // Usuario de la base de datos
+    password: 'R3p0rt3s2020*-', // Contraseña de la base de datos
+    server: '172.16.0.81',     // IP del servidor SQL Server
+    database: 'VIE19',         // Nombre de la base de datos
+    options: {
+        encrypt: false, 
+        trustServerCertificate: true, // Necesario si no se usa un certificado SSL válido
+        connectTimeout: 15000 
     }
 };
 
-// Intentar conectar al arrancar el servidor
-connectDB();
+// Variable global para almacenar el pool de conexión
+let pool;
 
-// =============================================================================
-// 4. API ENDPOINT
-// =============================================================================
+// 2. PRUEBA DE CONEXIÓN E INICIALIZACIÓN DEL SERVIDOR
+// Conectar a la base de datos y luego iniciar Express
+sql.connect(dbConfig).then(connectedPool => {
+    pool = connectedPool;
+    if (pool.connected) {
+        console.log(`✅ Conexión exitosa a la base de datos SQL Server: ${dbConfig.server}/${dbConfig.database}`);
+        // Iniciar el servidor Express solo si la conexión a la DB es exitosa
+        app.listen(PORT, () => {
+            console.log(`----------------------------------------------------------`);
+            console.log(`✅ Servidor Backend corriendo en: http://localhost:${PORT}`);
+            console.log(`📝 Endpoint listo: GET /api/voucher-transactions`);
+            console.log(`----------------------------------------------------------`);
+        });
+    }
+}).catch(err => {
+    console.error(`❌ Error al conectar a la base de datos SQL Server: ${err.message}`);
+    console.error(`Asegúrese de ejecutar 'npm install express mssql cors' y de que la IP (${dbConfig.server}) esté accesible.`);
+    process.exit(1); // Detener la aplicación si no hay conexión a la DB
+});
+
+
+// 3. Endpoint para obtener las transacciones (Filtrado por Rango de Fechas)
 app.get('/api/voucher-transactions', async (req, res) => {
     const { rangeStart, rangeEnd } = req.query;
 
+    if (!pool || !pool.connected) {
+        return res.status(503).json({ 
+            success: false, 
+            message: "Servicio de Base de Datos no disponible. Verifique la conexión." 
+        });
+    }
+
     if (!rangeStart || !rangeEnd) {
-        return res.status(400).json({ error: 'Faltan fechas de inicio/fin.' });
+        return res.status(400).json({ 
+            success: false, 
+            message: "Faltan parámetros de fecha (rangeStart y rangeEnd son obligatorios)" 
+        });
     }
 
     try {
-        // Verificar conexión antes de consultar
-        if (!sql.connected) {
-            console.log('🔄 Intentando reconexión...');
-            await connectDB();
-        }
-
         const query = `
             SELECT 
-                FECHA_COMPROBANTE as 'Fecha del Comprobante',
-                NOMBRE_TERCERO as 'Tercero Nombre',
-                NIT_TERCERO as 'ID Tercero',
-                BANCO_NOMBRE as 'Entidad Bancaria',
-                NUMERO_CUENTA as 'No. Cuenta Banco',
-                DETALLE_GLOSA as 'Detalle del Pago',
-                VALOR_TOTAL as 'Valor Pagado'
-            FROM TBL_COMPROBANTES_EGRESO
-            WHERE FECHA_COMPROBANTE BETWEEN @startDate AND @endDate
-            ORDER BY FECHA_COMPROBANTE DESC
+                BeneficiaryName AS [Tercero Nombre],
+                BankName AS [Entidad Bancaria],
+                BankAccountNumber AS [No. Cuenta Banco],
+                ConfirmationDate AS [Fecha del Comprobante],
+                Value AS [Valor Pagado],
+                Detail AS [Detalle del Pago],
+                BeneficiaryIdentification AS [ID Tercero]
+            FROM 
+                [VIE19].[Treasury].[VoucherTransaction]
+            WHERE 
+                DocumentDate >= @RangeStart 
+                AND DocumentDate <= @RangeEnd
+            ORDER BY 
+                ConfirmationDate DESC
         `;
 
-        // Usar la conexión global existente
-        const result = await new sql.Request()
-            .input('startDate', sql.Date, new Date(rangeStart))
-            .input('endDate', sql.Date, new Date(rangeEnd))
+        // Ejecutar la consulta con parámetros para prevenir inyección SQL
+        const result = await pool.request()
+            .input('RangeStart', sql.Date, new Date(rangeStart))
+            .input('RangeEnd', sql.Date, new Date(rangeEnd))
             .query(query);
 
-        res.json({ data: result.recordset });
+        res.json({
+            success: true,
+            count: result.recordset.length,
+            data: result.recordset
+        });
 
     } catch (err) {
-        console.error('❌ Error en consulta:', err.message);
-        res.status(500).json({ error: 'Error al consultar BD: ' + err.message });
+        console.error("Error en la consulta SQL:", err);
+        res.status(500).json({ 
+            success: false, 
+            message: "Error de ejecución de consulta a base de datos",
+            error: err.message 
+        });
     }
-});
-
-// =============================================================================
-// 5. ARRANQUE DEL SERVIDOR
-// =============================================================================
-app.listen(PORT, '0.0.0.0', () => {
-    console.log(`\n==================================================`);
-    console.log(`✅ SERVIDOR ACTIVO EN PUERTO ${PORT}`);
-    console.log(`==================================================`);
-    console.log(`🏠 Local:       http://localhost:${PORT}`);
-    console.log(`🏢 Red:         http://172.16.19.151:${PORT}`);
-    console.log(`🌐 Internet:    Para acceso externo, use ngrok.`);
-    console.log(`==================================================\n`);
 });
