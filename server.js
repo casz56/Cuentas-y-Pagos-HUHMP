@@ -16,8 +16,8 @@ const HOST = '0.0.0.0'; // IMPORTANTE: '0.0.0.0' permite conexiones desde toda l
 // =============================================================================
 // Reemplaza estos datos con las credenciales reales de tu servidor de Base de Datos del Hospital
 const dbConfig = {
-    user: 'sa',             // Tu usuario de base de datos
-    password: 'TuPasswordFuerte', // Tu contraseña
+    user: 'Reportes',             // Tu usuario de base de datos
+    password: 'R3p0rt3s2020*-', // Tu contraseña
     server: 'localhost',    // IP del servidor de base de datos (o '172.16.19.151' si es el mismo)
     database: 'NombreBD_Tesorería', // Nombre de la base de datos real
     options: {
