@@ -43,7 +43,7 @@ sql.connect(dbConfig).then(pool => {
 });
 
 // 2. Endpoint API: Obtener transacciones filtradas por fecha
-// Ruta: GET http://localhost:3000/api/voucher-transactions?rangeStart=2023-01-01&rangeEnd=2023-12-31
+// Ruta: GET http://172.16.19.151:3000/api/voucher-transactions?rangeStart=2023-01-01&rangeEnd=2023-12-31
 app.get('/api/voucher-transactions', async (req, res) => {
     try {
         const { rangeStart, rangeEnd } = req.query;
@@ -98,7 +98,7 @@ app.get('/api/voucher-transactions', async (req, res) => {
 // Iniciar el servidor
 app.listen(PORT, () => {
     console.log(`----------------------------------------------------------`);
-    console.log(`✅ Servidor Backend corriendo en: http://localhost:${PORT}`);
+    console.log(`✅ Servidor Backend corriendo en: http://172.16.19.151:${3000}`);
     console.log(`📝 Endpoint listo: GET /api/voucher-transactions`);
     console.log(`----------------------------------------------------------`);
 });
