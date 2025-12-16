@@ -244,8 +244,8 @@
                 </div>
             </form>
             
-            <!-- Mensajes de Estado -->
-            <div id="statusMessage" class="hidden mt-4 p-3 rounded-lg text-sm border-l-4"></div>
+            <!-- Mensajes de Estado y CONFIGURACIÓN -->
+            <div id="statusMessage" class="hidden mt-4 p-4 rounded-lg text-sm border-l-4"></div>
         </div>
 
         <!-- SECCIÓN I: RESUMEN (TABLA) -->
@@ -405,10 +405,9 @@
                 <ul class="list-disc list-inside space-y-2 ml-1">
                     <li>Use el panel superior para seleccionar el rango de fechas.</li>
                     <li><strong>Nueva Columna Observación:</strong> Se genera automáticamente según el tipo de servicio o proveedor.</li>
-                    <li><strong>Filtro por Observación Múltiple:</strong> Ahora puede seleccionar varias categorías (ej. Honorarios y Mantenimiento) al mismo tiempo desplegando la lista.</li>
-                    <li><strong>Gráficos Interactivos:</strong> Haga clic en una sección del gráfico circular para filtrar automáticamente toda la información por ese proveedor.</li>
-                    <li><strong>Filtros Concatenados:</strong> La barra de búsqueda y el filtro de observación trabajan juntos.</li>
-                    <li><strong>Exportación:</strong> Puede descargar en Excel o PDF exactamente lo que está viendo en pantalla.</li>
+                    <li><strong>Configuración API:</strong> Si la conexión falla, aparecerá un campo para ingresar la dirección de su servidor.</li>
+                    <li><strong>Gráficos Interactivos:</strong> Haga clic en una sección del gráfico circular para filtrar.</li>
+                    <li><strong>Exportación:</strong> Descargue en Excel o PDF.</li>
                 </ul>
                 <div class="text-right mt-4">
                     <button id="closeHelpBtn" class="bg-principal text-white px-4 py-2 rounded text-xs font-bold hover:bg-blue-900 transition">Entendido</button>
@@ -423,10 +422,30 @@
         document.getElementById('current-date').textContent = new Date().toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
         
         // =========================================================================================
-        // CONFIGURACIÓN DE CONEXIÓN
+        // CONFIGURACIÓN DE CONEXIÓN DINÁMICA (Local Storage)
         // =========================================================================================
-        // NOTA: Para producción real, cambia 'localhost' por la IP de tu servidor.
-        const API_BASE_URL = 'http://172.16.19.151:3000'; 
+        // Intenta obtener la URL guardada del navegador. Si no existe, usa '' (relativa) o localhost por defecto.
+        function getApiBaseUrl() {
+            // Prioridad: 1. Configuración guardada por el usuario
+            const savedUrl = localStorage.getItem('custom_api_url');
+            if (savedUrl) return savedUrl.replace(/\/$/, ''); // Quitar slash final si existe
+            
+            // Prioridad 2: Configuración por defecto (vacío = relativa al dominio actual)
+            return ''; 
+        }
+
+        // Función para guardar la nueva URL ingresada por el usuario en caso de error
+        function saveApiUrl() {
+            const input = document.getElementById('apiUrlInput');
+            if (input && input.value) {
+                let url = input.value.trim();
+                // Validaciones básicas
+                if (!url.startsWith('http')) url = 'http://' + url;
+                localStorage.setItem('custom_api_url', url);
+                // Recargar o reintentar
+                document.getElementById('searchForm').dispatchEvent(new Event('submit'));
+            }
+        }
         // =========================================================================================
 
         const currencyFormatter = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 });
@@ -509,36 +528,6 @@
             return "OTROS PAGOS"; // Valor por defecto
         }
 
-        // --- GENERADOR DE DATOS MOCK (RESPALDO CUANDO FALLA EL SERVER) ---
-        function generateMockData() {
-            const proveedores = [
-                { nombre: "VITALIS S.A.C.I.", id: "900123456", tipo: "MEDICAMENTOS" },
-                { nombre: "SINDICATO GREMIAL DE PROFESIONALES", id: "800987654", tipo: "ASISTENCIAL - GREMIO" },
-                { nombre: "ELECTRIFICADORA DEL HUILA", id: "891180000", tipo: "SERVICIOS PÚBLICOS - ENERGÍA" },
-                { nombre: "RAYOS X DEL HUILA S.A.S.", id: "900555666", tipo: "SERVICIO DE RESONANCIAS" },
-                { nombre: "DOTACIONES MEDICAS DEL SUR", id: "900777888", tipo: "MATERIAL MÉDICO QUIRÚRGICO" }
-            ];
-            
-            const data = [];
-            const today = new Date();
-            
-            for(let i=0; i < 50; i++) {
-                const prov = proveedores[Math.floor(Math.random() * proveedores.length)];
-                const fecha = new Date(today);
-                fecha.setDate(today.getDate() - Math.floor(Math.random() * 60)); // Últimos 60 días
-                
-                data.push({
-                    "Fecha del Comprobante": fecha.toISOString().split('T')[0],
-                    "Tercero Nombre": prov.nombre,
-                    "ID Tercero": prov.id,
-                    "Entidad Bancaria": Math.random() > 0.5 ? "BANCOLOMBIA" : "DAVIVIENDA",
-                    "Detalle del Pago": `PAGO FACTURA ${Math.floor(Math.random() * 10000)} - ${prov.tipo}`,
-                    "Valor Pagado": Math.floor(Math.random() * 10000000) + 500000
-                });
-            }
-            return data;
-        }
-
         // --- MANEJO DEL FORMULARIO ---
         document.getElementById('searchForm').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -559,35 +548,42 @@
             
             toggleLoading(true);
 
-            let rawData = [];
-            let isMock = false;
+            // Obtener URL configurada dinámicamente
+            const currentApiUrl = getApiBaseUrl();
 
             try {
-                // INTENTO 1: Conectar al servidor real
-                const response = await fetch(`${API_BASE_URL}/api/voucher-transactions?rangeStart=${start}&rangeEnd=${end}`);
-                
-                if (!response.ok) throw new Error('Error en la respuesta del servidor');
-                const result = await response.json();
-                if(!result || !result.data) throw new Error('Formato de datos incorrecto');
-                
-                rawData = result.data;
-                showStatus(`Se cargaron <strong>${rawData.length}</strong> registros exitosamente desde el servidor.`, 'success');
+                // Validación para entornos mixtos (HTTPS vs HTTP)
+                if (window.location.protocol === 'https:' && currentApiUrl.startsWith('http:')) {
+                    console.warn("Advertencia: Conexión mixta (HTTPS -> HTTP). Asegúrese de que el navegador permita contenido inseguro.");
+                }
 
-            } catch (error) {
-                // FALLBACK: Si falla (Failed to fetch), usar datos de ejemplo para demostración
-                console.warn("Error de conexión, cargando modo demo:", error);
-                rawData = generateMockData();
-                isMock = true;
+                // Construcción de la URL
+                // Si currentApiUrl está vacío, fetch usará la ruta relativa al dominio actual.
+                let fetchUrl = `${currentApiUrl}/api/voucher-transactions?rangeStart=${start}&rangeEnd=${end}`;
+
+                const response = await fetch(fetchUrl);
                 
-                let msg = `<strong>Nota:</strong> No se detectó conexión al servidor local (${API_BASE_URL}).<br>
-                           Se están mostrando <strong>DATOS DE EJEMPLO (Simulados)</strong> para demostración.`;
-                showStatus(msg, 'warning'); // Usamos estilo amarillo/warning
-            } finally {
-                // PROCESAMIENTO COMÚN (sea real o mock)
-                globalData = rawData.map(item => ({
+                if (!response.ok) {
+                    if(response.status === 404) throw new Error(`Ruta no encontrada (404). Verifique la URL base: "${currentApiUrl || 'relativa'}"`);
+                    if(response.status === 500) throw new Error('Error interno del servidor.');
+                    throw new Error(`Error del servidor: ${response.status} ${response.statusText}`);
+                }
+                
+                const result = await response.json();
+                
+                if(!result || !result.data) throw new Error('La respuesta del servidor no tiene el formato correcto (falta campo "data").');
+                
+                // Procesamiento de Datos Reales
+                globalData = result.data.map(item => ({
                     ...item,
-                    'ObservacionCalculada': calcularObservacion(item) // Inyectar nueva columna
+                    'ObservacionCalculada': calcularObservacion(item) 
                 }));
+
+                if (globalData.length === 0) {
+                    showStatus('La consulta fue exitosa pero no retornó registros para el rango de fechas seleccionado.', 'warning');
+                } else {
+                    showStatus(`Se cargaron <strong>${globalData.length}</strong> registros exitosamente.`, 'success');
+                }
 
                 filteredData = [...globalData]; 
                 populateMultiSelect(globalData);
@@ -595,7 +591,26 @@
                 
                 document.getElementById('section-resumen').classList.remove('hidden');
                 document.getElementById('section-graficas').classList.remove('hidden');
+
+            } catch (error) {
+                console.error("Error de conexión:", error);
                 
+                let errorMsg = `<strong>Error de Conexión:</strong> ${error.message}`;
+                let showConfig = false;
+                
+                if (error.message.includes("Failed to fetch") || error.message.includes("NetworkError")) {
+                    errorMsg = `<strong>No se pudo conectar al servidor.</strong><br>
+                                El sistema intentó conectar a: <strong>"${currentApiUrl || 'ruta relativa'}"</strong><br><br>
+                                <strong>¿Es incorrecta esta dirección?</strong> Configure la URL de su servidor aquí:`;
+                    showConfig = true;
+                } else if (error.message.includes("404")) {
+                     errorMsg += `<br><br><strong>Configure la URL de su servidor aquí:</strong>`;
+                     showConfig = true;
+                }
+
+                // Mostrar mensaje y formulario de configuración si es necesario
+                showStatus(errorMsg, 'error', showConfig);
+            } finally {
                 toggleLoading(false);
             }
         });
@@ -1099,9 +1114,31 @@
             else { btn.disabled = false; btn.classList.remove('opacity-70', 'cursor-not-allowed'); }
         }
 
-        function showStatus(msg, type) {
+        function showStatus(msg, type, showConfigInput = false) {
             const el = document.getElementById('statusMessage');
-            el.innerHTML = msg; 
+            let content = msg;
+
+            if (showConfigInput) {
+                // Agregar input de configuración al mensaje
+                const currentUrl = localStorage.getItem('custom_api_url') || '';
+                const placeholder = currentUrl || 'Ej: http://192.168.1.15:3000';
+                
+                content += `
+                    <div class="mt-4 p-3 bg-white rounded border border-red-200">
+                        <label class="block text-xs font-bold text-gray-500 mb-1">URL del Servidor (API):</label>
+                        <div class="flex gap-2">
+                            <input type="text" id="apiUrlInput" placeholder="${placeholder}" value="${currentUrl}" 
+                                class="flex-grow border border-gray-300 rounded px-2 py-1 text-sm focus:border-blue-500 focus:outline-none">
+                            <button onclick="saveApiUrl()" class="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700 transition">
+                                <i class="fas fa-save mr-1"></i> Guardar y Reintentar
+                            </button>
+                        </div>
+                        <p class="text-[10px] text-gray-400 mt-1">Esta dirección se guardará en su navegador.</p>
+                    </div>
+                `;
+            }
+
+            el.innerHTML = content; 
             el.classList.remove('hidden', 'bg-green-50', 'text-green-800', 'border-green-500', 'bg-red-50', 'text-red-800', 'border-red-500', 'bg-yellow-50', 'text-yellow-800', 'border-yellow-500');
             
             if (type === 'success') el.classList.add('bg-green-50', 'text-green-800', 'border-green-500');
