@@ -4,55 +4,73 @@ const sql = require('mssql');
 const path = require('path');
 
 const app = express();
+const PORT = process.env.PORT || 3000;
 
 // =============================================================================
-// 1. CONFIGURACIÓN DEL SERVIDOR WEB
+// 1. CONFIGURACIÓN DE BASE DE DATOS
 // =============================================================================
-// Puerto estándar. Si lo subes a la nube (Azure/AWS/Render), ellos asignan el puerto automáticamente en process.env.PORT
-const PORT = process.env.PORT || 3000; 
-const HOST = '0.0.0.0'; // Escuchar en todas las interfaces de red
-
-// =============================================================================
-// 2. CONFIGURACIÓN BASE DE DATOS (Mantenemos tus credenciales)
-// =============================================================================
+// ⚠️ IMPORTANTE: Asegúrate de que estos datos son los REALES de tu servidor SQL
 const dbConfig = {
-    user: 'Reportes',
-    password: 'R3p0rt3s2020*-', // <--- ASEGÚRATE DE QUE ESTA CONTRASEÑA SEA CORRECTA EN EL SERVIDOR REAL
-    server: '172.16.0.42',          // 'localhost' es correcto si la BD está en la misma máquina que este script
+    user: 'sa',             
+    password: 'TuPasswordFuerte', 
+    server: 'localhost',          
     database: 'NombreBD_Tesorería',
     options: {
         encrypt: false, 
-        trustServerCertificate: true
+        trustServerCertificate: true, // Crucial para evitar errores de certificado SSL local
+        enableArithAbort: true
     }
 };
 
 // =============================================================================
-// 3. MIDDLEWARE Y SEGURIDAD
+// 2. MIDDLEWARE
 // =============================================================================
-app.use(cors()); // Permite acceso desde cualquier origen (útil para móviles)
+app.use(cors()); 
 app.use(express.json());
 
-// --- SOLUCIÓN CLAVE: SERVIR EL FRONTEND DESDE AQUÍ ---
-// Esto permite que al entrar a http://IP-DEL-SERVIDOR:3000 veas la página automáticamente.
-// No necesitas abrir el archivo index.html manualmente.
-app.use(express.static(path.join(__dirname, '.'))); 
+// Sirve el Frontend (index.html) automáticamente
+app.use(express.static(path.join(__dirname, '.')));
 
 // =============================================================================
-// 4. API ENDPOINT (Rutas del Backend)
+// 3. FUNCIÓN DE CONEXIÓN ROBUSTA (PATRÓN SINGLETON)
+// =============================================================================
+const connectDB = async () => {
+    try {
+        // Si ya estamos conectados, no hacer nada
+        if (sql.connected) return;
+
+        // Cerrar cualquier conexión pendiente por si acaso
+        await sql.close();
+        
+        // Crear nueva conexión
+        await sql.connect(dbConfig);
+        console.log('✅ Base de Datos Conectada Exitosamente');
+    } catch (err) {
+        console.error('❌ Error de conexión BD:', err.message);
+        console.log('⚠️  Verifique credenciales en dbConfig (línea 13).');
+    }
+};
+
+// Intentar conectar al arrancar el servidor
+connectDB();
+
+// =============================================================================
+// 4. API ENDPOINT
 // =============================================================================
 app.get('/api/voucher-transactions', async (req, res) => {
     const { rangeStart, rangeEnd } = req.query;
 
-    console.log(`📡 Consulta recibida: ${rangeStart} a ${rangeEnd}`); // Log para depuración en consola del servidor
-
     if (!rangeStart || !rangeEnd) {
-        return res.status(400).json({ error: 'Se requieren fechas de inicio y fin.' });
+        return res.status(400).json({ error: 'Faltan fechas de inicio/fin.' });
     }
 
     try {
-        let pool = await sql.connect(dbConfig);
+        // Verificar conexión antes de consultar
+        if (!sql.connected) {
+            console.log('🔄 Intentando reconexión...');
+            await connectDB();
+        }
 
-        // Consulta SQL optimizada
         const query = `
             SELECT 
                 FECHA_COMPROBANTE as 'Fecha del Comprobante',
@@ -62,15 +80,13 @@ app.get('/api/voucher-transactions', async (req, res) => {
                 NUMERO_CUENTA as 'No. Cuenta Banco',
                 DETALLE_GLOSA as 'Detalle del Pago',
                 VALOR_TOTAL as 'Valor Pagado'
-            FROM 
-                TBL_COMPROBANTES_EGRESO
-            WHERE 
-                FECHA_COMPROBANTE BETWEEN @startDate AND @endDate
-            ORDER BY 
-                FECHA_COMPROBANTE DESC
+            FROM TBL_COMPROBANTES_EGRESO
+            WHERE FECHA_COMPROBANTE BETWEEN @startDate AND @endDate
+            ORDER BY FECHA_COMPROBANTE DESC
         `;
 
-        const result = await pool.request()
+        // Usar la conexión global existente
+        const result = await new sql.Request()
             .input('startDate', sql.Date, new Date(rangeStart))
             .input('endDate', sql.Date, new Date(rangeEnd))
             .query(query);
@@ -78,31 +94,20 @@ app.get('/api/voucher-transactions', async (req, res) => {
         res.json({ data: result.recordset });
 
     } catch (err) {
-        console.error('❌ Error Base de Datos:', err.message); // Log detallado en servidor
-        
-        if (err.code === 'ESOCKET') {
-            return res.status(500).json({ error: 'Fallo de conexión con SQL Server. Verifique credenciales y puerto 1433.' });
-        }
-        if (err.code === 'ELOGIN') {
-             return res.status(500).json({ error: 'Usuario o contraseña de Base de Datos incorrectos.' });
-        }
-        
-        res.status(500).json({ error: 'Error interno: ' + err.message });
+        console.error('❌ Error en consulta:', err.message);
+        res.status(500).json({ error: 'Error al consultar BD: ' + err.message });
     }
 });
 
 // =============================================================================
-// 5. INICIAR SERVIDOR
+// 5. ARRANQUE DEL SERVIDOR
 // =============================================================================
-app.listen(PORT, HOST, () => {
+app.listen(PORT, '0.0.0.0', () => {
     console.log(`\n==================================================`);
-    console.log(`✅ SERVIDOR EN LÍNEA - ENTORNO WEB HABILITADO`);
+    console.log(`✅ SERVIDOR ACTIVO EN PUERTO ${PORT}`);
     console.log(`==================================================`);
-    console.log(`📂 Modo: Producción / Web`);
-    console.log(`🔌 Puerto: ${PORT}`);
-    console.log(`\nPARA ACCEDER DESDE OTROS DISPOSITIVOS:`);
-    console.log(`   1. Asegúrese que este PC no tenga Firewall bloqueando el puerto ${PORT}.`);
-    console.log(`   2. Si está en la misma red WiFi, use: http://172.16.19.151:${PORT}`);
-    console.log(`   3. Si está FUERA de la red, necesitará una IP Pública o VPN.`);
+    console.log(`🏠 Local:       http://localhost:${PORT}`);
+    console.log(`🏢 Red:         http://172.16.19.151:${PORT}`);
+    console.log(`🌐 Internet:    Para acceso externo, use ngrok.`);
     console.log(`==================================================\n`);
 });
