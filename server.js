@@ -1,11 +1,23 @@
 /**
- * Backend para Visor de Tesorería (Migración de Power BI a Node.js)
+ * Backend para Visor de Tesorería (Node.js + SQL Server) - FIX v4
  *
- * Dependencias necesarias:
- * npm install express mssql cors
+ * Tu BD ya nos mostró los nombres reales de columnas:
+ * - Beneficiary (nombre tercero)
+ * - BeneficiaryIdentification (id tercero)
+ * - BankName (banco)
+ * - BankAccountNumber (cuenta)
+ * - ConfirmationDate (fecha comprobante)  [también existen DocumentDate y TransactionDate]
+ * - Value (valor)
+ * - Detail (detalle)
+ *
+ * Dependencias:
+ *   npm install express mssql cors
  *
  * Ejecución:
- * node server.js
+ *   node server.js
+ *
+ * Endpoint:
+ *   GET /api/voucher-transactions?rangeStart=YYYY-MM-DD&rangeEnd=YYYY-MM-DD
  */
 
 const express = require('express');
@@ -13,104 +25,131 @@ const sql = require('mssql');
 const cors = require('cors');
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
-// Habilitar CORS para permitir solicitudes desde el frontend (localhost:port)
-app.use(cors());
+app.use(cors({ origin: '*' }));
 app.use(express.json());
 
-// 1. Configuración de la conexión SQL (Credenciales basadas en la información proporcionada)
 const dbConfig = {
-    user: 'Reportes',          // Usuario de la base de datos
-    password: 'R3p0rt3s2020*-', // Contraseña de la base de datos
-    server: '172.16.0.81',     // IP del servidor SQL Server
-    database: 'VIE19',         // Nombre de la base de datos
-    options: {
-        encrypt: false, 
-        trustServerCertificate: true, // Necesario si no se usa un certificado SSL válido
-        connectTimeout: 15000 
-    }
+  user: process.env.DB_USER || 'Reportes',
+  password: process.env.DB_PASSWORD || 'R3p0rt3s2020*-',
+  server: process.env.DB_SERVER || '172.16.0.81',
+  database: process.env.DB_NAME || 'VIE19',
+  options: {
+    encrypt: false,
+    trustServerCertificate: true,
+  },
+  pool: { max: 10, min: 0, idleTimeoutMillis: 30000 },
+  requestTimeout: 60000,
+  connectionTimeout: 15000,
 };
 
-// Variable global para almacenar el pool de conexión
 let pool;
 
-// 2. PRUEBA DE CONEXIÓN E INICIALIZACIÓN DEL SERVIDOR
-// Conectar a la base de datos y luego iniciar Express
-sql.connect(dbConfig).then(connectedPool => {
-    pool = connectedPool;
-    if (pool.connected) {
-        console.log(`✅ Conexión exitosa a la base de datos SQL Server: ${dbConfig.server}/${dbConfig.database}`);
-        // Iniciar el servidor Express solo si la conexión a la DB es exitosa
-        app.listen(PORT, () => {
-            console.log(`----------------------------------------------------------`);
-            console.log(`✅ Servidor Backend corriendo en: http://localhost:${PORT}`);
-            console.log(`📝 Endpoint listo: GET /api/voucher-transactions`);
-            console.log(`----------------------------------------------------------`);
-        });
-    }
-}).catch(err => {
-    console.error(`❌ Error al conectar a la base de datos SQL Server: ${err.message}`);
-    console.error(`Asegúrese de ejecutar 'npm install express mssql cors' y de que la IP (${dbConfig.server}) esté accesible.`);
-    process.exit(1); // Detener la aplicación si no hay conexión a la DB
+// ===== Helpers fechas =====
+function isISODateOnly(s) {
+  return typeof s === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s);
+}
+function parseISODateOnlyLocal(iso) {
+  return new Date(iso + 'T00:00:00');
+}
+
+// ===== Health =====
+app.get('/health', async (req, res) => {
+  try {
+    const result = await pool.request().query('SELECT 1 AS ok');
+    res.json({ ok: true, db: result.recordset?.[0]?.ok === 1 });
+  } catch (e) {
+    res.status(503).json({ ok: false, message: 'DB no disponible', error: e.message });
+  }
 });
 
-
-// 3. Endpoint para obtener las transacciones (Filtrado por Rango de Fechas)
+// ===== Endpoint principal =====
 app.get('/api/voucher-transactions', async (req, res) => {
+  try {
     const { rangeStart, rangeEnd } = req.query;
 
-    if (!pool || !pool.connected) {
-        return res.status(503).json({ 
-            success: false, 
-            message: "Servicio de Base de Datos no disponible. Verifique la conexión." 
-        });
-    }
-
     if (!rangeStart || !rangeEnd) {
-        return res.status(400).json({ 
-            success: false, 
-            message: "Faltan parámetros de fecha (rangeStart y rangeEnd son obligatorios)" 
-        });
+      return res.status(400).json({
+        success: false,
+        message: 'Faltan parámetros: rangeStart y rangeEnd son obligatorios',
+        hint: 'Ej: /api/voucher-transactions?rangeStart=2025-11-01&rangeEnd=2025-11-30',
+      });
     }
 
-    try {
-        const query = `
-            SELECT 
-                BeneficiaryName AS [Tercero Nombre],
-                BankName AS [Entidad Bancaria],
-                BankAccountNumber AS [No. Cuenta Banco],
-                ConfirmationDate AS [Fecha del Comprobante],
-                Value AS [Valor Pagado],
-                Detail AS [Detalle del Pago],
-                BeneficiaryIdentification AS [ID Tercero]
-            FROM 
-                [VIE19].[Treasury].[VoucherTransaction]
-            WHERE 
-                DocumentDate >= @RangeStart 
-                AND DocumentDate <= @RangeEnd
-            ORDER BY 
-                ConfirmationDate DESC
-        `;
-
-        // Ejecutar la consulta con parámetros para prevenir inyección SQL
-        const result = await pool.request()
-            .input('RangeStart', sql.Date, new Date(rangeStart))
-            .input('RangeEnd', sql.Date, new Date(rangeEnd))
-            .query(query);
-
-        res.json({
-            success: true,
-            count: result.recordset.length,
-            data: result.recordset
-        });
-
-    } catch (err) {
-        console.error("Error en la consulta SQL:", err);
-        res.status(500).json({ 
-            success: false, 
-            message: "Error de ejecución de consulta a base de datos",
-            error: err.message 
-        });
+    if (!isISODateOnly(rangeStart) || !isISODateOnly(rangeEnd)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Formato inválido. Use YYYY-MM-DD (ej: 2025-11-01)',
+      });
     }
+
+    const startDayInclusive = parseISODateOnlyLocal(rangeStart);
+    const endDayInclusive = parseISODateOnlyLocal(rangeEnd);
+    const endDayExclusive = new Date(endDayInclusive);
+    endDayExclusive.setDate(endDayExclusive.getDate() + 1);
+
+    // Campo de fecha por defecto: ConfirmationDate
+    // Puedes cambiarlo sin tocar código con:
+    //   set COL_FECHA=DocumentDate   (Windows CMD)
+    //   $env:COL_FECHA="DocumentDate" (PowerShell)
+    // o:
+    //   export COL_FECHA=DocumentDate (Linux)
+    const DATE_COL = process.env.COL_FECHA || 'ConfirmationDate';
+
+    const query = `
+      SELECT
+        Beneficiary              AS [Tercero Nombre],
+        BankName                 AS [Entidad Bancaria],
+        BankAccountNumber        AS [No. Cuenta Banco],
+        ${DATE_COL}              AS [Fecha del Comprobante],
+        Value                    AS [Valor Pagado],
+        Detail                   AS [Detalle del Pago],
+        BeneficiaryIdentification AS [ID Tercero]
+      FROM [VIE19].[Treasury].[VoucherTransaction]
+      WHERE
+        TRY_CONVERT(datetime2, ${DATE_COL}) >= @RangeStart
+        AND TRY_CONVERT(datetime2, ${DATE_COL}) <  @RangeEndExclusive
+      ORDER BY TRY_CONVERT(datetime2, ${DATE_COL}) DESC;
+    `;
+
+    const result = await pool.request()
+      .input('RangeStart', sql.DateTime2, startDayInclusive)
+      .input('RangeEndExclusive', sql.DateTime2, endDayExclusive)
+      .query(query);
+
+    return res.json({
+      success: true,
+      count: result.recordset.length,
+      data: result.recordset,
+    });
+
+  } catch (err) {
+    console.error('❌ Error en consulta SQL:', err);
+    return res.status(500).json({
+      success: false,
+      message: 'Error de ejecución de consulta a base de datos',
+      error: err.message,
+    });
+  }
 });
+
+// ===== Start =====
+sql.connect(dbConfig)
+  .then((connectedPool) => {
+    pool = connectedPool;
+    console.log(`✅ Conexión exitosa a SQL Server: ${dbConfig.server}/${dbConfig.database}`);
+    app.listen(PORT, () => {
+      console.log('----------------------------------------------------------');
+      console.log(`✅ Servidor Backend corriendo en: http://localhost:${PORT}`);
+      console.log('📝 Endpoints:');
+      console.log('   GET /health');
+      console.log('   GET /api/voucher-transactions?rangeStart=YYYY-MM-DD&rangeEnd=YYYY-MM-DD');
+      console.log('----------------------------------------------------------');
+      console.log(`ℹ️  Usando columna fecha: ${process.env.COL_FECHA || 'ConfirmationDate'}`);
+    });
+  })
+  .catch((err) => {
+    console.error(`❌ Error al conectar a SQL Server: ${err.message}`);
+    process.exit(1);
+  });

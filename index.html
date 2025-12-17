@@ -4,13 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Visor de Tesorería - ESE HUHMP</title>
-    
+
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
+
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
+
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -18,56 +18,32 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    
-    <!-- Fuente Inter (Institucional) -->
+
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
-        
+
         :root {
-            /* Paleta Institucional Exacta del Archivo Cargado */
             --color-principal: #312782;
             --color-secundario: #008041;
             --color-terciario: #EC268F;
             --bg-body: #f3f4f6;
         }
 
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--bg-body);
-            color: #1e293b; /* slate-800 */
-        }
-
-        /* Utilidades de Color */
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg-body); color: #1e293b; }
         .bg-principal { background-color: var(--color-principal); }
         .text-principal { color: var(--color-principal); }
         .bg-secundario { background-color: var(--color-secundario); }
         .text-secundario { color: var(--color-secundario); }
-        
-        /* Botones Institucionales */
-        .btn-principal {
-            background-color: var(--color-principal);
-            color: white;
-            transition: all 0.2s;
-        }
-        .btn-principal:hover {
-            background-color: #1e1a5a; /* Un tono más oscuro */
-            transform: translateY(-1px);
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        }
 
-        .btn-excel {
-            background-color: #107c41; /* Color Excel */
-            color: white;
-        }
+        .btn-principal { background-color: var(--color-principal); color: white; transition: all 0.2s; }
+        .btn-principal:hover { background-color: #1e1a5a; transform: translateY(-1px); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+
+        .btn-excel { background-color: #107c41; color: white; }
         .btn-excel:hover { background-color: #0b572e; }
 
-        .btn-pdf {
-            background-color: #b30b00; /* Color PDF Adobe */
-            color: white;
-        }
+        .btn-pdf { background-color: #b30b00; color: white; }
         .btn-pdf:hover { background-color: #8a0800; }
 
-        /* Inputs Estilo Institucional */
         .input-institucional {
             width: 100%;
             border: 1px solid #e2e8f0;
@@ -82,16 +58,14 @@
             box-shadow: 0 0 0 3px rgba(49, 39, 130, 0.1);
         }
 
-        /* Tarjetas de Sección */
         .card-section {
             background-color: white;
-            border-radius: 0.75rem; /* rounded-xl */
+            border-radius: 0.75rem;
             padding: 1.5rem;
-            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06); /* shadow-sm */
-            border: 1px solid #e2e8f0; /* slate-200 */
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+            border: 1px solid #e2e8f0;
         }
 
-        /* Tabla Estilizada */
         .table-header-inst {
             background-color: var(--color-principal);
             color: white;
@@ -99,73 +73,30 @@
             text-transform: uppercase;
             letter-spacing: 0.05em;
         }
-        
-        /* Header Ordenable */
-        .sortable-header {
-            cursor: pointer;
-            transition: background-color 0.2s;
-            user-select: none;
-        }
-        .sortable-header:hover {
-            background-color: #1e1a5a;
-        }
-        .sort-icon {
-            margin-left: 0.5rem;
-            opacity: 0.5;
-        }
-        .sortable-header:hover .sort-icon {
-            opacity: 1;
-        }
 
-        /* Checkbox Personalizado en Dropdown */
-        .checkbox-item {
-            display: flex;
-            align-items: center;
-            padding: 0.5rem 0.75rem;
-            cursor: pointer;
-            transition: background-color 0.15s;
-        }
-        .checkbox-item:hover {
-            background-color: #f3f4f6;
-        }
-        .checkbox-item input[type="checkbox"] {
-            margin-right: 0.75rem;
-            accent-color: var(--color-secundario);
-            width: 1rem;
-            height: 1rem;
-        }
+        .sortable-header { cursor: pointer; transition: background-color 0.2s; user-select: none; }
+        .sortable-header:hover { background-color: #1e1a5a; }
+        .sort-icon { margin-left: 0.5rem; opacity: 0.5; }
+        .sortable-header:hover .sort-icon { opacity: 1; }
 
-        /* Animaciones */
-        .loader {
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid var(--color-principal);
-            border-radius: 50%;
-            width: 24px;
-            height: 24px;
-            animation: spin 1s linear infinite;
-            display: none;
-        }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .checkbox-item { display: flex; align-items: center; padding: 0.5rem 0.75rem; cursor: pointer; transition: background-color 0.15s; }
+        .checkbox-item:hover { background-color: #f3f4f6; }
+        .checkbox-item input[type="checkbox"] { margin-right: 0.75rem; accent-color: var(--color-secundario); width: 1rem; height: 1rem; }
 
-        .animate-fade-in-up {
-            animation: fadeInUp 0.5s ease-out forwards;
-            opacity: 0;
-        }
-        @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
+        .loader { border: 3px solid #f3f3f3; border-top: 3px solid var(--color-principal); border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; display: none; }
+        @keyframes spin { 0% { transform: rotate(0deg);} 100% { transform: rotate(360deg);} }
 
-        /* Botón Flotante (FAB) */
+        .animate-fade-in-up { animation: fadeInUp 0.5s ease-out forwards; opacity: 0; }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px);} to { opacity: 1; transform: translateY(0);} }
+
         .fab-btn {
             position: fixed; bottom: 2rem; right: 2rem; width: 3.5rem; height: 3.5rem;
             background-color: var(--color-secundario); color: white; border-radius: 50%; display: flex;
             align-items: center; justify-content: center; box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-            cursor: pointer; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 50; font-size: 1.5rem;
+            cursor: pointer; transition: all 0.3s cubic-bezier(0.175,0.885,0.32,1.275); z-index: 50; font-size: 1.5rem;
         }
         .fab-btn:hover { transform: scale(1.1) rotate(15deg); background-color: #006030; }
 
-        /* Modal Backdrop */
         .modal-backdrop {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background-color: rgba(0, 0, 0, 0.5); backdrop-filter: blur(4px); z-index: 60;
@@ -181,903 +112,1067 @@
         .modal-backdrop.active .modal-content { transform: scale(1); }
     </style>
 </head>
+
 <body class="p-4 md:p-8 flex flex-col min-h-screen">
 
-    <!-- CONTENEDOR PRINCIPAL -->
-    <div class="max-w-7xl mx-auto space-y-6 w-full flex-grow">
+<div class="max-w-7xl mx-auto space-y-6 w-full flex-grow">
 
-        <!-- ENCABEZADO INSTITUCIONAL -->
-        <header class="bg-principal text-white p-6 rounded-xl shadow-lg flex flex-col md:flex-row justify-between items-center gap-4 relative overflow-hidden">
-            <!-- Decoración Institucional -->
-            <div class="absolute top-0 right-0 w-64 h-64 bg-white opacity-5 rounded-full -mr-16 -mt-16 pointer-events-none"></div>
-            
-            <div class="flex items-center gap-4 z-10 w-full md:w-auto">
-                <!-- Logo desde GitHub (Fuente Institucional) -->
-                <div class="flex items-center justify-center h-full px-2 md:px-6">
-                    <img id="logo-img" src="https://raw.githubusercontent.com/casz56/MODELO-PARA-LA-ESTRUCTURACI-N-DE-LISTADO-INSTITUCIONAL-DE-TARIFAS-DE-PRODUCTOS-FARMAC-UTICOS/main/Logo_HUHMP_Blanco.png" 
-                         alt="Logo HUHMP" 
-                         class="h-14 md:h-16 w-auto object-contain drop-shadow-lg" crossorigin="anonymous">
-                </div>
-                
-                <div class="flex-grow border-l border-blue-800 pl-4 ml-2">
-                    <h1 class="text-2xl md:text-3xl font-bold leading-tight">Tesorería Dashboard</h1>
-                    <p class="text-blue-200 text-sm md:text-base">ESE Hospital Universitario Hernando Moncaleano Perdomo</p>
-                    <div class="flex items-center gap-3 mt-1">
-                        <span class="text-[0.65rem] md:text-xs bg-blue-800 px-2 py-0.5 rounded text-blue-100 border border-blue-700 font-mono tracking-wider">GD-SGI-M-005 | Vigencia 2025</span>
-                    </div>
-                </div>
+    <header class="bg-principal text-white p-6 rounded-xl shadow-lg flex flex-col md:flex-row justify-between items-center gap-4 relative overflow-hidden">
+        <div class="absolute top-0 right-0 w-64 h-64 bg-white opacity-5 rounded-full -mr-16 -mt-16 pointer-events-none"></div>
+
+        <div class="flex items-center gap-4 z-10 w-full md:w-auto">
+            <div class="flex items-center justify-center h-full px-2 md:px-6">
+                <img id="logo-img"
+                     src="https://raw.githubusercontent.com/casz56/MODELO-PARA-LA-ESTRUCTURACI-N-DE-LISTADO-INSTITUCIONAL-DE-TARIFAS-DE-PRODUCTOS-FARMAC-UTICOS/main/Logo_HUHMP_Blanco.png"
+                     alt="Logo HUHMP"
+                     class="h-14 md:h-16 w-auto object-contain drop-shadow-lg"
+                     crossorigin="anonymous">
             </div>
 
-            <!-- Información Usuario/Fecha -->
-            <div class="flex flex-col gap-1 z-10 text-right text-xs md:text-sm text-blue-100">
-                <p class="font-semibold"><i class="fas fa-user-circle mr-1"></i> Usuario: Reportes</p>
-                <p id="current-date" class="opacity-80">Fecha Actual</p>
+            <div class="flex-grow border-l border-blue-800 pl-4 ml-2">
+                <h1 class="text-2xl md:text-3xl font-bold leading-tight">Tesorería Gestión de Pagos</h1>
+                <p class="text-blue-200 text-sm md:text-base">ESE Hospital Universitario Hernando Moncaleano Perdomo</p>
+                <div class="flex items-center gap-3 mt-1">
+                    <span class="text-[0.65rem] md:text-xs bg-blue-800 px-2 py-0.5 rounded text-blue-100 border border-blue-700 font-mono tracking-wider">GF-T-C-001 V9 | Vigencia 2025</span>
+                </div>
             </div>
-        </header>
+        </div>
 
-        <!-- PANEL DE FILTROS -->
-        <div class="card-section">
-            <div class="flex items-center gap-2 mb-4 border-b border-slate-100 pb-2">
-                <div class="bg-blue-50 p-2 rounded text-principal">
-                    <i class="fas fa-filter"></i>
-                </div>
-                <h2 class="text-lg font-bold text-slate-700">Parámetros de Consulta</h2>
+        <div class="flex flex-col gap-1 z-10 text-right text-xs md:text-sm text-blue-100">
+            <p class="font-semibold"><i class="fas fa-user-circle mr-1"></i> Usuario: HUHMP</p>
+            <p id="current-date" class="opacity-80">Fecha Actual</p>
+        </div>
+    </header>
+
+    <div class="card-section">
+        <div class="flex items-center gap-2 mb-4 border-b border-slate-100 pb-2">
+            <div class="bg-blue-50 p-2 rounded text-principal"><i class="fas fa-filter"></i></div>
+            <h2 class="text-lg font-bold text-slate-700">Parámetros de Consulta</h2>
+        </div>
+
+        <form id="searchForm" class="grid grid-cols-1 md:grid-cols-4 gap-6 items-end">
+            <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase mb-1 ml-1">Fecha Inicio</label>
+                <input type="date" id="rangeStart" required class="input-institucional">
             </div>
-            
-            <form id="searchForm" class="grid grid-cols-1 md:grid-cols-4 gap-6 items-end">
-                <div>
-                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1 ml-1">Fecha Inicio</label>
-                    <input type="date" id="rangeStart" required class="input-institucional">
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1 ml-1">Fecha Fin</label>
-                    <input type="date" id="rangeEnd" required class="input-institucional">
-                </div>
-                <div>
+            <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase mb-1 ml-1">Fecha Fin</label>
+                <input type="date" id="rangeEnd" required class="input-institucional">
+            </div>
+            <div class="flex flex-col md:flex-row gap-3 md:justify-end md:items-end md:col-span-2">
                     <button type="submit" class="btn-principal w-full py-2.5 px-4 rounded-lg font-semibold shadow-md flex justify-center items-center gap-2">
                         <span>Generar Informe</span>
                         <i class="fas fa-search"></i>
                     </button>
+                    <button id="resetBtn" type="button" class="w-full py-2.5 px-4 rounded-lg font-semibold shadow-md flex justify-center items-center gap-2 transition-all hover:-translate-y-0.5"
+                            style="background-color: var(--color-secundario); color: white;">
+                        <span>Restablecer</span>
+                        <i class="fas fa-rotate-left"></i>
+                    </button>
                 </div>
-                <div class="flex items-center justify-center md:justify-start h-full pb-2">
-                    <div id="loader" class="loader"></div>
-                </div>
-            </form>
-            
-            <!-- Mensajes de Estado -->
-            <div id="statusMessage" class="hidden mt-4 p-3 rounded-lg text-sm border-l-4"></div>
+            <div class="flex items-center justify-center md:justify-end h-full pb-2">
+                <div id="loader" class="loader"></div>
+            </div>
+        </form>
+
+        <div id="statusMessage" class="hidden mt-4 p-3 rounded-lg text-sm border-l-4"></div>
+    </div>
+
+    <section id="section-resumen" class="card-section hidden animate-fade-in-up">
+        <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+            <div class="flex items-center gap-2">
+                <span class="bg-secundario text-white w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs">I</span>
+                <h2 class="text-xl font-bold text-principal">Resumen de Transacciones</h2>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="downloadExcel()" class="btn-excel py-2 px-4 rounded-lg font-semibold shadow-sm text-sm flex items-center gap-2 transition-transform hover:scale-105">
+                    <i class="fas fa-file-excel"></i> Descargar Excel
+                </button>
+                <button onclick="downloadPDF()" class="btn-pdf py-2 px-4 rounded-lg font-semibold shadow-sm text-sm flex items-center gap-2 transition-transform hover:scale-105">
+                    <i class="fas fa-file-pdf"></i> Descargar PDF
+                </button>
+            </div>
         </div>
 
-        <!-- SECCIÓN I: RESUMEN (TABLA) -->
-        <section id="section-resumen" class="card-section hidden animate-fade-in-up">
-            <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
-                <div class="flex items-center gap-2">
-                    <span class="bg-secundario text-white w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs">I</span>
-                    <h2 class="text-xl font-bold text-principal">Resumen de Transacciones</h2>
-                </div>
-                <!-- Botones de Exportación -->
-                <div class="flex gap-2">
-                    <button onclick="downloadExcel()" class="btn-excel py-2 px-4 rounded-lg font-semibold shadow-sm text-sm flex items-center gap-2 transition-transform hover:scale-105">
-                        <i class="fas fa-file-excel"></i> Descargar Excel
-                    </button>
-                    <button onclick="downloadPDF()" class="btn-pdf py-2 px-4 rounded-lg font-semibold shadow-sm text-sm flex items-center gap-2 transition-transform hover:scale-105">
-                        <i class="fas fa-file-pdf"></i> Descargar PDF
-                    </button>
-                </div>
-            </div>
-
-            <!-- FILTROS LOCALES CONCATENADOS -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 p-4 bg-slate-50 rounded-lg border border-slate-200 z-40 relative">
-                <!-- Búsqueda General -->
-                <div class="md:col-span-2">
-                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Búsqueda Rápida (ID o Nombre)</label>
-                    <div class="relative">
-                        <input type="text" id="searchInput" placeholder="Escriba nombre o identificación..." class="input-institucional pl-10">
-                        <i class="fas fa-search absolute left-3 top-2.5 text-slate-400"></i>
-                    </div>
-                </div>
-                <!-- Filtro por Observación (MULTISELECCIÓN) -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 p-4 bg-slate-50 rounded-lg border border-slate-200 z-40 relative">
+            <div class="md:col-span-2">
+                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Búsqueda Rápida (ID o Nombre)</label>
                 <div class="relative">
-                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Filtrar por Observación (Múltiple)</label>
-                    
-                    <!-- Botón Dropdown -->
-                    <button id="multiSelectBtn" type="button" class="input-institucional text-left flex justify-between items-center bg-white cursor-pointer hover:border-blue-400">
-                        <span id="multiSelectLabel" class="truncate text-sm text-gray-700">Todas las Observaciones</span>
-                        <i class="fas fa-chevron-down text-gray-400 text-xs"></i>
-                    </button>
-
-                    <!-- Menú Desplegable -->
-                    <div id="multiSelectDropdown" class="hidden absolute top-full left-0 w-full bg-white border border-slate-200 rounded-md shadow-xl mt-1 max-h-60 overflow-y-auto z-50">
-                        <!-- Las opciones se inyectan aquí -->
-                    </div>
+                    <input type="text" id="searchInput" placeholder="Escriba nombre o identificación..." class="input-institucional pl-10">
+                    <i class="fas fa-search absolute left-3 top-2.5 text-slate-400"></i>
                 </div>
             </div>
-            
-            <div class="rounded-lg border border-slate-200 overflow-hidden">
-                <div class="overflow-x-auto max-h-[500px] overflow-y-auto">
-                    <table class="min-w-full divide-y divide-slate-200">
-                        <thead class="table-header-inst sticky top-0 z-10">
-                            <tr>
-                                <th class="px-6 py-3 text-left sortable-header" onclick="handleSort('Fecha del Comprobante')">
-                                    Fecha <i id="icon-Fecha del Comprobante" class="fas fa-sort sort-icon"></i>
-                                </th>
-                                <th class="px-6 py-3 text-left sortable-header" onclick="handleSort('Tercero Nombre')">
-                                    Beneficiario <i id="icon-Tercero Nombre" class="fas fa-sort sort-icon"></i>
-                                </th>
-                                <th class="px-6 py-3 text-left sortable-header" onclick="handleSort('ID Tercero')">
-                                    ID Tercero <i id="icon-ID Tercero" class="fas fa-sort sort-icon"></i>
-                                </th>
-                                <!-- NUEVA COLUMNA OBSERVACIÓN -->
-                                <th class="px-6 py-3 text-left sortable-header" onclick="handleSort('ObservacionCalculada')">
-                                    Observación <i id="icon-ObservacionCalculada" class="fas fa-sort sort-icon"></i>
-                                </th>
-                                <th class="px-6 py-3 text-left sortable-header" onclick="handleSort('Entidad Bancaria')">
-                                    Banco <i id="icon-Entidad Bancaria" class="fas fa-sort sort-icon"></i>
-                                </th>
-                                <th class="px-6 py-3 text-left sortable-header" onclick="handleSort('Detalle del Pago')">
-                                    Detalle <i id="icon-Detalle del Pago" class="fas fa-sort sort-icon"></i>
-                                </th>
-                                <th class="px-6 py-3 text-right sortable-header" onclick="handleSort('Valor Pagado')">
-                                    Valor Pagado <i id="icon-Valor Pagado" class="fas fa-sort sort-icon"></i>
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody id="resultsBody" class="bg-white divide-y divide-slate-100 text-sm text-slate-600">
-                            <!-- Datos Dinámicos -->
-                        </tbody>
-                        <tfoot class="bg-slate-50 sticky bottom-0 z-10 font-bold border-t border-slate-200">
-                            <tr>
-                                <td colspan="6" class="px-6 py-3 text-right text-slate-700">TOTAL ACUMULADO:</td>
-                                <td class="px-6 py-3 text-right text-principal text-lg" id="totalAmount">$0</td>
-                            </tr>
-                        </tfoot>
-                    </table>
-                </div>
+
+            <div class="relative">
+                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Filtrar por Observación (Múltiple)</label>
+                <button id="multiSelectBtn" type="button" class="input-institucional text-left flex justify-between items-center bg-white cursor-pointer hover:border-blue-400">
+                    <span id="multiSelectLabel" class="truncate text-sm text-gray-700">Todas las Observaciones</span>
+                    <i class="fas fa-chevron-down text-gray-400 text-xs"></i>
+                </button>
+
+                <div id="multiSelectDropdown" class="hidden absolute top-full left-0 w-full bg-white border border-slate-200 rounded-md shadow-xl mt-1 max-h-60 overflow-y-auto z-50"></div>
             </div>
-            <p class="text-xs text-slate-400 italic text-right mt-2" id="recordCountLabel">* Visualizando últimos registros.</p>
-        </section>
+        </div>
 
-        <!-- SECCIÓN II: GRÁFICAS -->
-        <section id="section-graficas" class="hidden animate-fade-in-up" style="animation-delay: 0.1s;">
-            <div class="card-section mb-6">
-                <div class="flex items-center gap-2 mb-6">
-                    <span class="bg-secundario text-white w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs">II</span>
-                    <h2 class="text-xl font-bold text-principal">Dashboard de Indicadores</h2>
+        <div class="rounded-lg border border-slate-200 overflow-hidden">
+            <div class="overflow-x-auto max-h-[500px] overflow-y-auto">
+                <table class="min-w-full divide-y divide-slate-200">
+                    <thead class="table-header-inst sticky top-0 z-10">
+                        <tr>
+                            <th class="px-6 py-3 text-left sortable-header" onclick="handleSort('Fecha del Comprobante')">
+                                Fecha <i id="icon-Fecha del Comprobante" class="fas fa-sort sort-icon"></i>
+                            </th>
+                            <th class="px-6 py-3 text-left sortable-header" onclick="handleSort('Tercero Nombre')">
+                                Beneficiario <i id="icon-Tercero Nombre" class="fas fa-sort sort-icon"></i>
+                            </th>
+                            <th class="px-6 py-3 text-left sortable-header" onclick="handleSort('ID Tercero')">
+                                ID Tercero <i id="icon-ID Tercero" class="fas fa-sort sort-icon"></i>
+                            </th>
+                            <th class="px-6 py-3 text-left sortable-header" onclick="handleSort('ObservacionCalculada')">
+                                Observación <i id="icon-ObservacionCalculada" class="fas fa-sort sort-icon"></i>
+                            </th>
+                            <th class="px-6 py-3 text-left sortable-header" onclick="handleSort('Entidad Bancaria')">
+                                Banco <i id="icon-Entidad Bancaria" class="fas fa-sort sort-icon"></i>
+                            </th>
+                            <th class="px-6 py-3 text-left sortable-header" onclick="handleSort('Detalle del Pago')">
+                                Detalle <i id="icon-Detalle del Pago" class="fas fa-sort sort-icon"></i>
+                            </th>
+                            <th class="px-6 py-3 text-right sortable-header" onclick="handleSort('Valor Pagado')">
+                                Valor Pagado <i id="icon-Valor Pagado" class="fas fa-sort sort-icon"></i>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody id="resultsBody" class="bg-white divide-y divide-slate-100 text-sm text-slate-600"></tbody>
+                    <tfoot class="bg-slate-50 sticky bottom-0 z-10 font-bold border-t border-slate-200">
+                        <tr>
+                            <td colspan="6" class="px-6 py-3 text-right text-slate-700">TOTAL ACUMULADO:</td>
+                            <td class="px-6 py-3 text-right text-principal text-lg" id="totalAmount">$0</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+        <p class="text-xs text-slate-400 italic text-right mt-2" id="recordCountLabel">* Visualizando últimos registros.</p>
+    </section>
+
+    <section id="section-graficas" class="hidden animate-fade-in-up" style="animation-delay: 0.1s;">
+        <div class="card-section mb-6">
+            <div class="flex items-center gap-2 mb-6">
+                <span class="bg-secundario text-white w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs">II</span>
+                <h2 class="text-xl font-bold text-principal">Dashboard de Indicadores</h2>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                    <h3 class="text-sm font-bold text-slate-700 text-center mb-1">Distribución de Pagos por Proveedor</h3>
+                    <p class="text-xs text-slate-500 text-center mb-4">Top 5 vs. Otros (Basado en Filtros)</p>
+                    <div class="relative h-72 w-full"><canvas id="pieChart"></canvas></div>
                 </div>
 
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    <!-- GRÁFICO 1 -->
-                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
-                        <h3 class="text-sm font-bold text-slate-700 text-center mb-1">Distribución de Pagos por Proveedor</h3>
-                        <p class="text-xs text-slate-500 text-center mb-4">Top 5 vs. Otros (Basado en Filtros)</p>
-                        <div class="relative h-72 w-full">
-                            <canvas id="pieChart"></canvas>
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                    <div class="flex justify-between items-center mb-4">
+                        <div>
+                            <h3 class="text-sm font-bold text-slate-700">Evolución de Pagos</h3>
+                            <p class="text-xs text-slate-500">Acumulado por Vigencia (Basado en Filtros)</p>
                         </div>
+                        <select id="barChartFilter" class="input-institucional py-1 px-2 text-xs w-auto bg-white">
+                            <option value="day">Diario</option>
+                            <option value="month" selected>Mensual</option>
+                            <option value="year">Anual</option>
+                        </select>
                     </div>
-
-                    <!-- GRÁFICO 2 -->
-                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
-                        <div class="flex justify-between items-center mb-4">
-                            <div>
-                                <h3 class="text-sm font-bold text-slate-700">Evolución de Pagos</h3>
-                                <p class="text-xs text-slate-500">Acumulado por Vigencia (Basado en Filtros)</p>
-                            </div>
-                            <select id="barChartFilter" class="input-institucional py-1 px-2 text-xs w-auto bg-white">
-                                <option value="day">Diario</option>
-                                <option value="month" selected>Mensual</option>
-                                <option value="year">Anual</option>
-                            </select>
-                        </div>
-                        <div class="relative h-72 w-full">
-                            <canvas id="barChart"></canvas>
-                        </div>
-                    </div>
+                    <div class="relative h-72 w-full"><canvas id="barChart"></canvas></div>
                 </div>
             </div>
-        </section>
+        </div>
+    </section>
 
-    </div> <!-- Fin Max-w-7xl -->
+</div>
 
-    <!-- FOOTER (Pie de Página Institucional) -->
-    <footer class="mt-8 text-center border-t border-slate-200 py-6 text-slate-500 text-xs">
-        <p class="font-semibold">&copy; 2025 ESE HUHMP - Hospital Universitario Hernando Moncaleano Perdomo</p>
-        <p>Documento controlado. Cualquier impresión es copia no controlada.</p>
-    </footer>
+<footer class="mt-8 text-center border-t border-slate-200 py-6 text-slate-500 text-xs">
+    <p class="font-semibold">&copy; 2025 ESE HUHMP - Hospital Universitario Hernando Moncaleano Perdomo</p>
+    <p>Documento controlado. Cualquier impresión es copia no controlada.</p>
+</footer>
 
-    <!-- BOTÓN FLOTANTE AYUDA -->
-    <button id="helpBtn" class="fab-btn group" title="Ayuda">
-        <i class="fas fa-question"></i>
-        <!-- Tooltip -->
-        <span class="absolute right-full mr-3 bg-slate-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">Ayuda</span>
-    </button>
+<button id="helpBtn" class="fab-btn group" title="Ayuda">
+    <i class="fas fa-question"></i>
+    <span class="absolute right-full mr-3 bg-slate-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">Ayuda</span>
+</button>
 
-    <!-- MODAL AYUDA -->
-    <div id="helpModal" class="modal-backdrop">
-        <div class="modal-content">
-            <div class="bg-principal text-white p-4 flex justify-between items-center">
-                <h3 class="font-bold flex items-center gap-2"><i class="fas fa-info-circle"></i> Ayuda del Sistema</h3>
-                <button id="closeHelp" class="hover:text-yellow-400 text-xl">&times;</button>
+<div id="helpModal" class="modal-backdrop">
+    <div class="modal-content">
+        <div class="bg-principal text-white p-4 flex justify-between items-center">
+            <h3 class="font-bold flex items-center gap-2"><i class="fas fa-info-circle"></i> Ayuda del Sistema</h3>
+            <button id="closeHelp" class="hover:text-yellow-400 text-xl">&times;</button>
+        </div>
+        <div class="p-6 overflow-y-auto max-h-[60vh] space-y-4 text-sm text-slate-700">
+            <div class="bg-blue-50 p-3 rounded border border-blue-100">
+                <p><strong>Bienvenido.</strong> Utilice este módulo para auditar y visualizar pagos realizados a terceros.</p>
             </div>
-            <div class="p-6 overflow-y-auto max-h-[60vh] space-y-4 text-sm text-slate-700">
-                <div class="bg-blue-50 p-3 rounded border border-blue-100">
-                    <p><strong>Bienvenido.</strong> Utilice este módulo para auditar y visualizar pagos realizados a terceros.</p>
-                </div>
-                <ul class="list-disc list-inside space-y-2 ml-1">
-                    <li>Use el panel superior para seleccionar el rango de fechas.</li>
-                    <li><strong>Nueva Columna Observación:</strong> Se genera automáticamente según el tipo de servicio o proveedor.</li>
-                    <li><strong>Filtro por Observación Múltiple:</strong> Ahora puede seleccionar varias categorías (ej. Honorarios y Mantenimiento) al mismo tiempo desplegando la lista.</li>
-                    <li><strong>Filtros Concatenados:</strong> La barra de búsqueda y el filtro de observación trabajan juntos.</li>
-                    <li><strong>Ordenamiento:</strong> Haga clic en los encabezados de la tabla.</li>
-                    <li><strong>Exportación:</strong> Puede descargar en Excel o PDF exactamente lo que está viendo en pantalla.</li>
-                </ul>
-                <div class="text-right mt-4">
-                    <button id="closeHelpBtn" class="bg-principal text-white px-4 py-2 rounded text-xs font-bold hover:bg-blue-900 transition">Entendido</button>
-                </div>
+            <ul class="list-disc list-inside space-y-2 ml-1">
+                <li>Use el panel superior para seleccionar el rango de fechas.</li>
+                <li><strong>Nueva Columna Observación:</strong> Se genera automáticamente según el tipo de servicio o proveedor.</li>
+                <li><strong>Filtro por Observación Múltiple:</strong> Ahora puede seleccionar varias categorías (ej. Honorarios y Mantenimiento) al mismo tiempo desplegando la lista.</li>
+                <li><strong>Filtros Concatenados:</strong> La barra de búsqueda y el filtro de observación trabajan juntos.</li>
+                <li><strong>Ordenamiento:</strong> Haga clic en los encabezados de la tabla.</li>
+                <li><strong>Exportación:</strong> Puede descargar en Excel o PDF exactamente lo que está viendo en pantalla.</li>
+            </ul>
+            <div class="text-right mt-4">
+                <button id="closeHelpBtn" class="bg-principal text-white px-4 py-2 rounded text-xs font-bold hover:bg-blue-900 transition">Entendido</button>
             </div>
         </div>
     </div>
+</div>
 
-    <!-- SCRIPT LÓGICO -->
-    <script>
-        // --- CONFIGURACIÓN ---
-        document.getElementById('current-date').textContent = new Date().toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-        
-        const currencyFormatter = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 });
-        const dateFormatter = (d) => d ? new Date(d).toLocaleDateString('es-ES') : '';
+<script>
+    // ======================
+    // CONFIG / UTILIDADES
+    // ======================
+    document.getElementById('current-date').textContent =
+        new Date().toLocaleDateString('es-ES', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
 
-        let globalData = [];
-        let filteredData = []; // Datos actualmente visibles después de filtros locales
-        let pieChartInstance = null;
-        let barChartInstance = null;
-        let base64Logo = null; 
-        
-        // Estado del Ordenamiento
-        let sortConfig = {
-            key: null,
-            direction: 'asc'
-        };
+    // API_BASE configurable:
+    // - Por defecto: http://localhost:3000
+    // - Override: ?api=http://IP_DEL_BACKEND:3000
+    function getApiBase(){
+        const params = new URLSearchParams(location.search);
+        const override = params.get('api');
+        if (override) return override.replace(/\/$/, '');
+        return 'http://localhost:3000';
+    }
+    const API_BASE = getApiBase();
 
-        // --- PRECARGAR LOGO PARA PDF ---
-        async function loadLogo() {
+    // ======================
+    // CACHE (CONTENEDOR LOCAL)
+    // Objetivo: si una consulta futura cae dentro de un rango ya consultado, cargar inmediato sin llamar al backend.
+    // Implementación: localStorage con "tesoreria_cache_v1" (máx 10 entradas, se podan las más antiguas).
+    // Nota: Esto funciona en cualquier equipo/navegador donde exista ese almacenamiento (mismo origen).
+    // ======================
+    const CACHE_KEY = 'tesoreria_cache_v1';
+
+    function parseDateOnly(iso) { return new Date(iso + 'T00:00:00'); }
+
+    function inRange(dateStr, startISO, endISO) {
+        if (!dateStr) return false;
+        const t = new Date(dateStr).getTime();
+        const s = parseDateOnly(startISO).getTime();
+        const e = parseDateOnly(endISO).getTime();
+        return t >= s && t <= e;
+    }
+
+    function cacheLoad() {
+        try {
+            const raw = localStorage.getItem(CACHE_KEY);
+            if (!raw) return [];
+            const arr = JSON.parse(raw);
+            return Array.isArray(arr) ? arr : [];
+        } catch (_) { return []; }
+    }
+
+    function cacheSave(entries) {
+        try {
+            localStorage.setItem(CACHE_KEY, JSON.stringify(entries));
+            return true;
+        } catch (e) {
+            // Si se llenó el storage, podar y reintentar
             try {
-                // Se mantiene la URL original según el último archivo provisto por el usuario
-                const response = await fetch("https://raw.githubusercontent.com/casz56/MODELO-PARA-LA-ESTRUCTURACI-N-DE-LISTADO-INSTITUCIONAL-DE-TARIFAS-DE-PRODUCTOS-FARMAC-UTICOS/main/Logo_HUHMP_Blanco.png");
-                const blob = await response.blob();
-                const reader = new FileReader();
-                reader.onloadend = () => { base64Logo = reader.result; };
-                reader.readAsDataURL(blob);
-            } catch (e) {
-                console.warn("No se pudo cargar el logo para PDF:", e);
+                const pruned = entries.slice(-5);
+                localStorage.setItem(CACHE_KEY, JSON.stringify(pruned));
+                return true;
+            } catch (_) { return false; }
+        }
+    }
+
+    function cacheFindCoveringRange(reqStart, reqEnd) {
+        const entries = cacheLoad();
+        const rs = parseDateOnly(reqStart).getTime();
+        const re = parseDateOnly(reqEnd).getTime();
+        let best = null;
+
+        for (const e of entries) {
+            if (!e || !e.start || !e.end || !Array.isArray(e.data)) continue;
+            const es = parseDateOnly(e.start).getTime();
+            const ee = parseDateOnly(e.end).getTime();
+            if (es <= rs && ee >= re) {
+                if (!best) best = e;
+                else {
+                    const bestWidth = parseDateOnly(best.end).getTime() - parseDateOnly(best.start).getTime();
+                    const currWidth = ee - es;
+                    if (currWidth < bestWidth) best = e;
+                }
             }
         }
-        loadLogo(); 
+        return best;
+    }
 
-        // --- ALGORITMO PARA LA COLUMNA OBSERVACIÓN (COLUMNA D) ---
-        function calcularObservacion(row) {
-            const tercero = (row['Tercero Nombre'] || '').toUpperCase();
-            const detalle = (row['Detalle del Pago'] || '').toUpperCase();
+    function cacheUpsertRange(startISO, endISO, dataArray) {
+        const entries = cacheLoad();
+        const now = Date.now();
+        const payload = { start: startISO, end: endISO, savedAt: now, data: dataArray };
 
-            // Reglas de Clasificación Automática (Basadas en el archivo Estructura.xlsx)
-            
-            // 1. RESONANCIAS / IMAGENES
-            if (tercero.includes("RAYOS X") || tercero.includes("RESONANCIA")) {
-                return "SERVICIO DE RESONANCIAS";
-            }
-            
-            // 2. MATERIAL MÉDICO
-            if (tercero.includes("DOTACIONES MEDICAS") || 
-                tercero.includes("BOSTON SCIENTIFIC") || 
-                detalle.includes("MATERIAL MEDICO") ||
-                tercero.includes("SUMINISTROS D&M")) {
-                return "MATERIAL MÉDICO QUIRÚRGICO";
-            }
+        const idx = entries.findIndex(e => e.start === startISO && e.end === endISO);
+        if (idx >= 0) entries[idx] = payload;
+        else entries.push(payload);
 
-            // 3. MEDICAMENTOS
-            if (tercero.includes("VITALIS") || 
-                tercero.includes("BIOSPIFAR") || 
-                tercero.includes("DEPÓSITO DE DROGAS") ||
-                detalle.includes("MEDICAMENTOS")) {
-                return "MEDICAMENTOS";
-            }
+        entries.sort((a,b) => (a.savedAt||0) - (b.savedAt||0));
+        cacheSave(entries.slice(-10));
+    }
 
-            // 4. HONORARIOS / AGREMIACIONES / ESPECIALISTAS
-            if (tercero.includes("SINDICATO GREMIAL") || tercero.includes("ASEMHO")) {
-                return "ASISTENCIAL - GREMIO";
-            }
-            if (tercero.includes("SERVICIOS INTEGRALES EN MEDICINA") || detalle.includes("URGENCIOLOGO")) {
-                return "MÉDICO ESPECIALISTA - URGENCIOLOGO";
-            }
-            if (tercero.includes("HEMATOONCOLOGO") || tercero.includes("HEMATOONCOLOGÍA")) {
-                return "ESP. HEMATOONCOLOGÍA PEDIÁTRICA";
-            }
+    function filterCachedDataForRange(cachedEntry, reqStart, reqEnd) {
+        return cachedEntry.data.filter(row => inRange(row['Fecha del Comprobante'], reqStart, reqEnd));
+    }
 
-            // 5. SERVICIOS GENERALES / OTROS
-            if (tercero.includes("ELECTRIFICADORA")) return "SERVICIOS PÚBLICOS - ENERGÍA";
-            if (tercero.includes("AGUAS DEL HUILA")) return "SERVICIOS PÚBLICOS - ACUEDUCTO";
-            
-            // Clasificación por defecto si no cae en reglas anteriores
-            if (detalle.includes("HONORARIOS")) return "HONORARIOS";
-            if (detalle.includes("SUMINISTRO")) return "SUMINISTROS";
-            if (detalle.includes("MANTENIMIENTO")) return "MANTENIMIENTO";
 
-            return "OTROS PAGOS"; // Valor por defecto
+    const currencyFormatter = new Intl.NumberFormat('es-CO', { style:'currency', currency:'COP', minimumFractionDigits:0 });
+    const dateFormatter = (d) => d ? new Date(d).toLocaleDateString('es-ES') : '';
+
+    let globalData = [];
+    let filteredData = [];
+    let pieChartInstance = null;
+    let barChartInstance = null;
+    let base64Logo = null;
+
+    let sortConfig = { key: null, direction: 'asc' };
+
+    // ======================
+    // PRECARGAR LOGO PDF
+    // ======================
+    async function loadLogo() {
+        try {
+            const response = await fetch("https://raw.githubusercontent.com/casz56/MODELO-PARA-LA-ESTRUCTURACI-N-DE-LISTADO-INSTITUCIONAL-DE-TARIFAS-DE-PRODUCTOS-FARMAC-UTICOS/main/Logo_HUHMP_Blanco.png");
+            const blob = await response.blob();
+            const reader = new FileReader();
+            reader.onloadend = () => { base64Logo = reader.result; };
+            reader.readAsDataURL(blob);
+        } catch (e) {
+            console.warn("No se pudo cargar el logo para PDF:", e);
+        }
+    }
+    loadLogo();
+
+    // ======================
+    // OBSERVACIÓN (ALG)
+    // ======================
+    function calcularObservacion(row) {
+        const tercero = (row['Tercero Nombre'] || '').toUpperCase();
+        const detalle = (row['Detalle del Pago'] || '').toUpperCase();
+
+        if (tercero.includes("RAYOS X") || tercero.includes("RESONANCIA")) return "SERVICIO DE RESONANCIAS";
+
+        if (tercero.includes("DOTACIONES MEDICAS") ||
+            tercero.includes("BOSTON SCIENTIFIC") ||
+            detalle.includes("MATERIAL MEDICO") ||
+            tercero.includes("SUMINISTROS D&M")) {
+            return "MATERIAL MÉDICO QUIRÚRGICO";
         }
 
-        // --- MANEJO DEL FORMULARIO ---
-        document.getElementById('searchForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const start = document.getElementById('rangeStart').value;
-            const end = document.getElementById('rangeEnd').value;
-            const statusEl = document.getElementById('statusMessage');
-            
-            // Limpiar filtros locales
-            document.getElementById('searchInput').value = '';
-            // Reset MultiSelect
-            const dropdown = document.getElementById('multiSelectDropdown');
-            dropdown.innerHTML = '';
-            updateMultiSelectLabel();
-            
-            statusEl.classList.add('hidden');
-            document.getElementById('section-resumen').classList.add('hidden');
-            document.getElementById('section-graficas').classList.add('hidden');
-            
-            toggleLoading(true);
+        if (tercero.includes("VITALIS") ||
+            tercero.includes("BIOSPIFAR") ||
+            tercero.includes("DEPÓSITO DE DROGAS") ||
+            detalle.includes("MEDICAMENTOS")) {
+            return "MEDICAMENTOS";
+        }
 
-            try {
-                // CONEXIÓN A LOCALHOST:3000
-                const response = await fetch(`http://localhost:3000/api/voucher-transactions?rangeStart=${start}&rangeEnd=${end}`);
-                
-                if (!response.ok) throw new Error('Error en la respuesta del servidor');
-                
-                const result = await response.json();
-                
-                if(!result || !result.data) throw new Error('Formato de datos incorrecto');
+        if (tercero.includes("SINDICATO GREMIAL") || tercero.includes("ASEMHO")) return "ASISTENCIAL - GREMIO";
+        if (tercero.includes("SERVICIOS INTEGRALES EN MEDICINA") || detalle.includes("URGENCIOLOGO")) return "MÉDICO ESPECIALISTA - URGENCIOLOGO";
+        if (tercero.includes("HEMATOONCOLOGO") || tercero.includes("HEMATOONCOLOGÍA")) return "ESP. HEMATOONCOLOGÍA PEDIÁTRICA";
 
-                // Procesar Data Global y Calcular Observación
-                globalData = result.data.map(item => ({
-                    ...item,
-                    'ObservacionCalculada': calcularObservacion(item) // Inyectar nueva columna
-                }));
+        if (tercero.includes("ELECTRIFICADORA")) return "SERVICIOS PÚBLICOS - ENERGÍA";
+        if (tercero.includes("AGUAS DEL HUILA")) return "SERVICIOS PÚBLICOS - ACUEDUCTO";
 
-                filteredData = [...globalData]; // Inicializar filtrado
+        if (detalle.includes("HONORARIOS")) return "HONORARIOS";
+        if (detalle.includes("SUMINISTRO")) return "SUMINISTROS";
+        if (detalle.includes("MANTENIMIENTO")) return "MANTENIMIENTO";
+
+        return "OTROS PAGOS";
+    }
+
+    // ======================
+    // FORMULARIO
+    // ======================
+    document.getElementById('searchForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const start = document.getElementById('rangeStart').value;
+        const end = document.getElementById('rangeEnd').value;
+        const statusEl = document.getElementById('statusMessage');
+
+        // Limpiar filtros locales
+        document.getElementById('searchInput').value = '';
+        document.getElementById('multiSelectDropdown').innerHTML = '';
+        updateMultiSelectLabel();
+
+        statusEl.classList.add('hidden');
+        document.getElementById('section-resumen').classList.add('hidden');
+        document.getElementById('section-graficas').classList.add('hidden');
+
+        toggleLoading(true);
+
+        try {
+            // 1) Buscar en cache si el rango solicitado ya está cubierto
+            const cached = cacheFindCoveringRange(start, end);
+            if (cached) {
+                const cachedData = filterCachedDataForRange(cached, start, end);
+
+                globalData = cachedData.map(item => {
+                    const rawVal = item['Valor Pagado'];
+                    const numVal = (typeof rawVal === 'number') ? rawVal : (parseFloat(String(rawVal).replace(/[^\d.-]/g,'')) || 0);
+                    const normalized = { ...item, 'Valor Pagado': numVal };
+                    return { ...normalized, 'ObservacionCalculada': calcularObservacion(normalized) };
+                });
+
+                filteredData = [...globalData];
 
                 populateMultiSelect(globalData);
-                
-                // Aplicar filtros iniciales (aunque estén vacíos) y renderizar todo
                 applyLocalFilters();
-                
+
                 document.getElementById('section-resumen').classList.remove('hidden');
                 document.getElementById('section-graficas').classList.remove('hidden');
-                
-                showStatus(`Se cargaron <strong>${globalData.length}</strong> registros exitosamente.`, 'success');
 
-            } catch (error) {
-                console.error("Error capturado:", error);
-                let userMsg = 'Error desconocido al cargar datos.';
-                
-                if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
-                    userMsg = `<strong>No se puede conectar al servidor.</strong><br>Asegúrese de ejecutar <code>node server.js</code> en su terminal.`;
-                } else {
-                    userMsg = `Error: ${error.message}`;
+                showStatus(`Cargado desde <strong>cache</strong>: <strong>${globalData.length}</strong> registros. <span class="opacity-70">(Rango guardado: ${cached.start} → ${cached.end})</span>`, 'success');
+                return; // no llamar al backend
+            }
+
+            // 2) Si no está en cache, consultar backend
+            const response = await fetch(`${API_BASE}/api/voucher-transactions?rangeStart=${encodeURIComponent(start)}&rangeEnd=${encodeURIComponent(end)}`);
+if (!response.ok) {
+                const text = await response.text();
+                let msg = `Error en la respuesta del servidor (HTTP ${response.status})`;
+                try {
+                    const j = JSON.parse(text);
+                    msg = j.message || msg;
+                    if (j.error) msg += `<br><span class="opacity-80">Detalle: ${j.error}</span>`;
+                } catch (_) {
+                    if (text) msg += `<br><span class="opacity-80">Detalle: ${text}</span>`;
                 }
-                showStatus(userMsg, 'error');
-            } finally {
-                toggleLoading(false);
+                throw new Error(msg);
             }
-        });
 
-        // --- LÓGICA DE FILTROS LOCALES (CONCATENADOS & MULTIPLE) ---
-        
-        // 1. Manejo del Dropdown
-        const multiSelectBtn = document.getElementById('multiSelectBtn');
-        const multiSelectDropdown = document.getElementById('multiSelectDropdown');
-        
-        multiSelectBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            multiSelectDropdown.classList.toggle('hidden');
-        });
+            const result = await response.json();
 
-        // Cerrar al hacer clic fuera
-        document.addEventListener('click', (e) => {
-            if (!multiSelectBtn.contains(e.target) && !multiSelectDropdown.contains(e.target)) {
-                multiSelectDropdown.classList.add('hidden');
+            // Guardar en cache el rango consultado (para próximas consultas instantáneas)
+            // Se guarda la data cruda del backend; al cargar desde cache se normaliza e inyecta Observación.
+            cacheUpsertRange(start, end, result.data);
+
+            if (!result || !Array.isArray(result.data)) throw new Error('Formato de datos incorrecto');
+
+            // Normalización: Valor Pagado a number por si llega string
+            globalData = result.data.map(item => {
+                const rawVal = item['Valor Pagado'];
+                const numVal = (typeof rawVal === 'number') ? rawVal : (parseFloat(String(rawVal).replace(/[^\d.-]/g,'')) || 0);
+                const normalized = { ...item, 'Valor Pagado': numVal };
+                return { ...normalized, 'ObservacionCalculada': calcularObservacion(normalized) };
+            });
+
+            filteredData = [...globalData];
+
+
+            populateMultiSelect(globalData);
+            applyLocalFilters();
+
+            document.getElementById('section-resumen').classList.remove('hidden');
+            document.getElementById('section-graficas').classList.remove('hidden');
+
+            showStatus(`Se cargaron <strong>${globalData.length}</strong> registros exitosamente. <span class="opacity-70">(API: ${API_BASE})</span>`, 'success');
+
+        } catch (error) {
+            console.error("Error capturado:", error);
+            let userMsg = 'Error desconocido al cargar datos.';
+
+            if (error.name === 'TypeError' && String(error.message).includes('Failed to fetch')) {
+                userMsg = `<strong>No se puede conectar al servidor.</strong><br>Asegúrese de ejecutar <code>node server.js</code> y que el backend sea accesible.<br>
+                           Si abriste este HTML desde red/file:// prueba: <code>?api=http://IP_DEL_BACKEND:3000</code>`;
+            } else {
+                userMsg = `Error: ${error.message}`;
             }
+            showStatus(userMsg, 'error');
+        } finally {
+            toggleLoading(false);
+        }
+    });
+
+    // ======================
+    // FILTROS LOCALES
+    // ======================
+    const multiSelectBtn = document.getElementById('multiSelectBtn');
+    const multiSelectDropdown = document.getElementById('multiSelectDropdown');
+
+    multiSelectBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        multiSelectDropdown.classList.toggle('hidden');
+    });
+
+    document.addEventListener('click', (e) => {
+        if (!multiSelectBtn.contains(e.target) && !multiSelectDropdown.contains(e.target)) {
+            multiSelectDropdown.classList.add('hidden');
+        }
+    });
+
+    function populateMultiSelect(data) {
+        const uniqueObs = [...new Set(data.map(item => item['ObservacionCalculada']))].filter(Boolean).sort();
+        multiSelectDropdown.innerHTML = '';
+
+        const allDiv = document.createElement('div');
+        allDiv.className = 'checkbox-item font-bold border-b border-gray-100';
+        allDiv.innerHTML = `<input type="checkbox" id="selectAllObs" checked> <label for="selectAllObs" class="cursor-pointer w-full">Seleccionar Todos</label>`;
+        multiSelectDropdown.appendChild(allDiv);
+
+        const allCheckbox = allDiv.querySelector('input');
+        allCheckbox.addEventListener('change', (e) => {
+            const checkboxes = multiSelectDropdown.querySelectorAll('input[type="checkbox"]:not(#selectAllObs)');
+            checkboxes.forEach(cb => cb.checked = e.target.checked);
+            updateMultiSelectLabel();
+            applyLocalFilters();
         });
 
-        // 2. Llenar el Multi-Select con Checkboxes
-        function populateMultiSelect(data) {
-            const uniqueObs = [...new Set(data.map(item => item['ObservacionCalculada']))].filter(Boolean).sort();
-            multiSelectDropdown.innerHTML = '';
+        uniqueObs.forEach(obs => {
+            const div = document.createElement('div');
+            div.className = 'checkbox-item';
+            const safeId = 'obs-' + obs.replace(/[^a-z0-9]/gi, '_');
+            div.innerHTML = `<input type="checkbox" value="${obs}" id="${safeId}" checked> <label for="${safeId}" class="cursor-pointer w-full text-sm text-gray-600 truncate">${obs}</label>`;
+            multiSelectDropdown.appendChild(div);
 
-            // Opción "Seleccionar Todos"
-            const allDiv = document.createElement('div');
-            allDiv.className = 'checkbox-item font-bold border-b border-gray-100';
-            allDiv.innerHTML = `<input type="checkbox" id="selectAllObs" checked> <label for="selectAllObs" class="cursor-pointer w-full">Seleccionar Todos</label>`;
-            multiSelectDropdown.appendChild(allDiv);
+            const cb = div.querySelector('input');
+            cb.addEventListener('change', () => {
+                if (!cb.checked) allCheckbox.checked = false;
+                const allOpts = multiSelectDropdown.querySelectorAll('input[type="checkbox"]:not(#selectAllObs)');
+                const allChecked = Array.from(allOpts).every(c => c.checked);
+                if (allChecked) allCheckbox.checked = true;
 
-            // Listener "Seleccionar Todos"
-            const allCheckbox = allDiv.querySelector('input');
-            allCheckbox.addEventListener('change', (e) => {
-                const checkboxes = multiSelectDropdown.querySelectorAll('input[type="checkbox"]:not(#selectAllObs)');
-                checkboxes.forEach(cb => cb.checked = e.target.checked);
                 updateMultiSelectLabel();
                 applyLocalFilters();
             });
-
-            // Opciones Individuales
-            uniqueObs.forEach(obs => {
-                const div = document.createElement('div');
-                div.className = 'checkbox-item';
-                // Generar ID único seguro
-                const safeId = 'obs-' + obs.replace(/[^a-z0-9]/gi, '_');
-                div.innerHTML = `<input type="checkbox" value="${obs}" id="${safeId}" checked> <label for="${safeId}" class="cursor-pointer w-full text-sm text-gray-600 truncate">${obs}</label>`;
-                multiSelectDropdown.appendChild(div);
-
-                // Listener individual
-                const cb = div.querySelector('input');
-                cb.addEventListener('change', () => {
-                    // Si alguno se desmarca, desmarcar "Todos"
-                    if (!cb.checked) allCheckbox.checked = false;
-                    // Si todos se marcan, marcar "Todos"
-                    const allOpts = multiSelectDropdown.querySelectorAll('input[type="checkbox"]:not(#selectAllObs)');
-                    const allChecked = Array.from(allOpts).every(c => c.checked);
-                    if(allChecked) allCheckbox.checked = true;
-
-                    updateMultiSelectLabel();
-                    applyLocalFilters();
-                });
-            });
-            updateMultiSelectLabel();
-        }
-
-        function updateMultiSelectLabel() {
-            const checkboxes = Array.from(multiSelectDropdown.querySelectorAll('input[type="checkbox"]:not(#selectAllObs)'));
-            const checkedCount = checkboxes.filter(cb => cb.checked).length;
-            const label = document.getElementById('multiSelectLabel');
-
-            if (checkedCount === 0) {
-                label.textContent = "Ninguna seleccionada";
-                label.classList.add('text-gray-400');
-            } else if (checkedCount === checkboxes.length) {
-                label.textContent = "Todas las Observaciones";
-                label.classList.remove('text-gray-400');
-            } else {
-                label.textContent = `${checkedCount} seleccionadas`;
-                label.classList.remove('text-gray-400');
-            }
-        }
-
-        // 3. Función Maestra de Filtrado
-        function applyLocalFilters() {
-            const searchText = document.getElementById('searchInput').value.toLowerCase().trim();
-            
-            // Obtener lista de observaciones seleccionadas
-            const checkboxes = multiSelectDropdown.querySelectorAll('input[type="checkbox"]:not(#selectAllObs)');
-            const selectedObservations = Array.from(checkboxes)
-                .filter(cb => cb.checked)
-                .map(cb => cb.value);
-
-            // Filtrar desde la data global
-            filteredData = globalData.filter(row => {
-                const name = (row['Tercero Nombre'] || '').toLowerCase();
-                const id = (row['ID Tercero'] || '').toString().toLowerCase();
-                const realObs = row['ObservacionCalculada'];
-                
-                // Filtro Texto (ID o Nombre) - Búsqueda aproximada
-                const matchesSearch = !searchText || name.includes(searchText) || id.includes(searchText);
-                
-                // Filtro Multi-Select - Verifica si la observación está en la lista de seleccionados
-                // Si no hay observaciones seleccionadas, no muestra nada (o muestra todo si se prefiere esa lógica, pero visualmente "ninguna" implica vacio)
-                // Aquí: Si hay 0 seleccionados, asumimos que el usuario limpió el filtro -> no mostrar nada.
-                const matchesSelect = selectedObservations.includes(realObs);
-
-                // CONCATENACIÓN: Ambos deben ser verdaderos (AND Logic)
-                return matchesSearch && matchesSelect;
-            });
-            
-            // Re-aplicar ordenamiento si existe
-            if (sortConfig.key) {
-                performSort(sortConfig.key, sortConfig.direction);
-            }
-
-            renderTable(filteredData);
-            // CONCATENACIÓN VISUAL: Las gráficas se renderizan con la data filtrada
-            renderCharts(filteredData);
-        }
-
-        // Listener para búsqueda de texto
-        document.getElementById('searchInput').addEventListener('input', applyLocalFilters);
-
-        // --- LÓGICA DE ORDENAMIENTO ---
-
-        function handleSort(key) {
-            // Alternar dirección si es la misma columna
-            if (sortConfig.key === key) {
-                sortConfig.direction = sortConfig.direction === 'asc' ? 'desc' : 'asc';
-            } else {
-                sortConfig.key = key;
-                sortConfig.direction = 'asc';
-            }
-
-            performSort(key, sortConfig.direction);
-            renderTable(filteredData);
-        }
-
-        function performSort(key, direction) {
-            filteredData.sort((a, b) => {
-                let valA = a[key] || '';
-                let valB = b[key] || '';
-
-                // Manejo especial para fechas y números
-                if (key === 'Fecha del Comprobante') {
-                    valA = new Date(valA).getTime();
-                    valB = new Date(valB).getTime();
-                } else if (key === 'Valor Pagado') {
-                    valA = parseFloat(valA) || 0;
-                    valB = parseFloat(valB) || 0;
-                } else {
-                    // Texto: Case insensitive
-                    valA = valA.toString().toLowerCase();
-                    valB = valB.toString().toLowerCase();
-                }
-
-                if (valA < valB) return direction === 'asc' ? -1 : 1;
-                if (valA > valB) return direction === 'asc' ? 1 : -1;
-                return 0;
-            });
-        }
-
-        function updateSortIcons() {
-            // Resetear todos los iconos
-            document.querySelectorAll('.sort-icon').forEach(icon => {
-                icon.className = 'fas fa-sort sort-icon';
-                icon.style.opacity = '0.3';
-            });
-
-            // Activar el actual
-            if (sortConfig.key) {
-                const activeIcon = document.getElementById(`icon-${sortConfig.key}`);
-                if (activeIcon) {
-                    activeIcon.className = sortConfig.direction === 'asc' ? 'fas fa-sort-up sort-icon' : 'fas fa-sort-down sort-icon';
-                    activeIcon.style.opacity = '1';
-                    activeIcon.style.color = 'var(--color-terciario)'; // Color destacado
-                }
-            }
-        }
-
-        // --- RENDERIZADO DE TABLA ---
-        function renderTable(data) {
-            const tbody = document.getElementById('resultsBody');
-            tbody.innerHTML = '';
-            let total = 0;
-            
-            // Actualizar iconos visuales de ordenamiento
-            updateSortIcons();
-
-            if (data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" class="text-center py-8 text-slate-400">No se encontraron datos con los filtros actuales.</td></tr>';
-                document.getElementById('totalAmount').textContent = '$0';
-                document.getElementById('recordCountLabel').textContent = '0 registros.';
-                return;
-            }
-
-            // Mostrar máx 1000 filas para rendimiento
-            const displayData = data.slice(0, 1000); 
-
-            displayData.forEach(row => {
-                const val = row['Valor Pagado'] || 0;
-                total += val; 
-                
-                const tr = document.createElement('tr');
-                tr.className = 'hover:bg-blue-50 transition-colors border-b border-slate-100 last:border-0';
-                tr.innerHTML = `
-                    <td class="px-6 py-3 whitespace-nowrap text-xs text-slate-500 font-medium">${dateFormatter(row['Fecha del Comprobante'])}</td>
-                    <td class="px-6 py-3 font-semibold text-slate-700 truncate max-w-xs" title="${row['Tercero Nombre']}">${row['Tercero Nombre'] || 'N/A'}</td>
-                    <td class="px-6 py-3 text-slate-500 font-mono text-xs">${row['ID Tercero'] || ''}</td>
-                    <!-- CELDA OBSERVACIÓN -->
-                    <td class="px-6 py-3 text-secundario font-bold text-xs uppercase truncate max-w-xs" title="${row['ObservacionCalculada']}">${row['ObservacionCalculada']}</td>
-                    <td class="px-6 py-3 text-slate-500 text-xs">${row['Entidad Bancaria'] || ''}</td>
-                    <td class="px-6 py-3 text-slate-500 text-xs truncate max-w-xs" title="${row['Detalle del Pago']}">${row['Detalle del Pago'] || ''}</td>
-                    <td class="px-6 py-3 text-right font-bold text-slate-700">${currencyFormatter.format(val)}</td>
-                `;
-                tbody.appendChild(tr);
-            });
-
-            // Total REAL sobre todos los datos filtrados
-            const realTotal = data.reduce((sum, row) => sum + (row['Valor Pagado'] || 0), 0);
-            document.getElementById('totalAmount').textContent = currencyFormatter.format(realTotal);
-            
-            const countText = data.length > 1000 ? `Mostrando 1000 de ${data.length} registros.` : `${data.length} registros.`;
-            document.getElementById('recordCountLabel').textContent = countText;
-        }
-
-        // --- LÓGICA DE GRÁFICAS ---
-        function renderCharts(data) {
-            // Nota: Aquí data ya viene filtrada por applyLocalFilters
-            updatePieChart(data);
-            updateBarChart(data, document.getElementById('barChartFilter').value);
-        }
-
-        document.getElementById('barChartFilter').addEventListener('change', (e) => {
-            // Al cambiar el filtro de la gráfica, usamos filteredData para mantener consistencia con la tabla
-            if (filteredData.length > 0) updateBarChart(filteredData, e.target.value);
         });
 
-        function updatePieChart(data) {
-            const ctx = document.getElementById('pieChart').getContext('2d');
-            const supplierMap = {};
-            data.forEach(item => {
-                const name = item['Tercero Nombre'] || 'Desconocido';
-                supplierMap[name] = (supplierMap[name] || 0) + (item['Valor Pagado'] || 0);
-            });
+        updateMultiSelectLabel();
+    }
 
-            let sorted = Object.entries(supplierMap).sort((a, b) => b[1] - a[1]);
-            const top5 = sorted.slice(0, 5);
-            const othersValue = sorted.slice(5).reduce((sum, item) => sum + item[1], 0);
-            
-            const labels = top5.map(i => i[0]);
-            const values = top5.map(i => i[1]);
-            if (othersValue > 0) { labels.push('Otros'); values.push(othersValue); }
+    function updateMultiSelectLabel() {
+        const checkboxes = Array.from(multiSelectDropdown.querySelectorAll('input[type="checkbox"]:not(#selectAllObs)'));
+        const checkedCount = checkboxes.filter(cb => cb.checked).length;
+        const label = document.getElementById('multiSelectLabel');
 
-            if (pieChartInstance) pieChartInstance.destroy();
+        if (checkboxes.length === 0) {
+            label.textContent = "Todas las Observaciones";
+            label.classList.remove('text-gray-400');
+            return;
+        }
 
-            const chartColors = ['#312782', '#008041', '#EC268F', '#fbbf24', '#94a3b8', '#cbd5e1'];
+        if (checkedCount === 0) {
+            label.textContent = "Ninguna seleccionada";
+            label.classList.add('text-gray-400');
+        } else if (checkedCount === checkboxes.length) {
+            label.textContent = "Todas las Observaciones";
+            label.classList.remove('text-gray-400');
+        } else {
+            label.textContent = `${checkedCount} seleccionadas`;
+            label.classList.remove('text-gray-400');
+        }
+    }
 
-            pieChartInstance = new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        data: values,
-                        backgroundColor: chartColors,
-                        borderWidth: 2,
-                        borderColor: '#ffffff'
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10, family: 'Inter' } } },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    let value = context.raw;
-                                    let total = context.chart._metasets[context.datasetIndex].total;
-                                    let percentage = ((value / total) * 100).toFixed(1) + "%";
-                                    return ' ' + currencyFormatter.format(value) + ' (' + percentage + ')';
-                                }
+    function applyLocalFilters() {
+        const searchText = document.getElementById('searchInput').value.toLowerCase().trim();
+
+        const checkboxes = multiSelectDropdown.querySelectorAll('input[type="checkbox"]:not(#selectAllObs)');
+        const selectedObservations = Array.from(checkboxes).filter(cb => cb.checked).map(cb => cb.value);
+
+        // Si no hay dropdown cargado aún, mostramos todo
+        const hasObsFilter = selectedObservations.length > 0;
+
+        filteredData = globalData.filter(row => {
+            const name = (row['Tercero Nombre'] || '').toLowerCase();
+            const id = (row['ID Tercero'] || '').toString().toLowerCase();
+            const realObs = row['ObservacionCalculada'];
+
+            const matchesSearch = !searchText || name.includes(searchText) || id.includes(searchText);
+            const matchesSelect = !hasObsFilter ? true : selectedObservations.includes(realObs);
+
+            return matchesSearch && matchesSelect;
+        });
+
+        if (sortConfig.key) performSort(sortConfig.key, sortConfig.direction);
+
+        renderTable(filteredData);
+        renderCharts(filteredData);
+    }
+
+    document.getElementById('searchInput').addEventListener('input', applyLocalFilters);
+
+    // ======================
+    // ORDENAMIENTO
+    // ======================
+    function handleSort(key) {
+        if (sortConfig.key === key) sortConfig.direction = (sortConfig.direction === 'asc') ? 'desc' : 'asc';
+        else { sortConfig.key = key; sortConfig.direction = 'asc'; }
+
+        performSort(key, sortConfig.direction);
+        renderTable(filteredData);
+    }
+
+    function performSort(key, direction) {
+        filteredData.sort((a, b) => {
+            let valA = a[key] ?? '';
+            let valB = b[key] ?? '';
+
+            if (key === 'Fecha del Comprobante') {
+                valA = new Date(valA).getTime() || 0;
+                valB = new Date(valB).getTime() || 0;
+            } else if (key === 'Valor Pagado') {
+                valA = parseFloat(valA) || 0;
+                valB = parseFloat(valB) || 0;
+            } else {
+                valA = valA.toString().toLowerCase();
+                valB = valB.toString().toLowerCase();
+            }
+
+            if (valA < valB) return direction === 'asc' ? -1 : 1;
+            if (valA > valB) return direction === 'asc' ? 1 : -1;
+            return 0;
+        });
+    }
+
+    function updateSortIcons() {
+        document.querySelectorAll('.sort-icon').forEach(icon => {
+            icon.className = 'fas fa-sort sort-icon';
+            icon.style.opacity = '0.3';
+            icon.style.color = '';
+        });
+
+        if (sortConfig.key) {
+            const activeIcon = document.getElementById(`icon-${sortConfig.key}`);
+            if (activeIcon) {
+                activeIcon.className = (sortConfig.direction === 'asc') ? 'fas fa-sort-up sort-icon' : 'fas fa-sort-down sort-icon';
+                activeIcon.style.opacity = '1';
+                activeIcon.style.color = 'var(--color-terciario)';
+            }
+        }
+    }
+
+    // ======================
+    // TABLA
+    // ======================
+    function renderTable(data) {
+        const tbody = document.getElementById('resultsBody');
+        tbody.innerHTML = '';
+        updateSortIcons();
+
+        if (data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center py-8 text-slate-400">No se encontraron datos con los filtros actuales.</td></tr>';
+            document.getElementById('totalAmount').textContent = '$0';
+            document.getElementById('recordCountLabel').textContent = '0 registros.';
+            return;
+        }
+
+        const displayData = data.slice(0, 1000);
+
+        displayData.forEach(row => {
+            const val = row['Valor Pagado'] || 0;
+
+            const tr = document.createElement('tr');
+            tr.className = 'hover:bg-blue-50 transition-colors border-b border-slate-100 last:border-0';
+            tr.innerHTML = `
+                <td class="px-6 py-3 whitespace-nowrap text-xs text-slate-500 font-medium">${dateFormatter(row['Fecha del Comprobante'])}</td>
+                <td class="px-6 py-3 font-semibold text-slate-700 truncate max-w-xs" title="${row['Tercero Nombre'] || ''}">${row['Tercero Nombre'] || 'N/A'}</td>
+                <td class="px-6 py-3 text-slate-500 font-mono text-xs">${row['ID Tercero'] || ''}</td>
+                <td class="px-6 py-3 text-secundario font-bold text-xs uppercase truncate max-w-xs" title="${row['ObservacionCalculada'] || ''}">${row['ObservacionCalculada'] || ''}</td>
+                <td class="px-6 py-3 text-slate-500 text-xs">${row['Entidad Bancaria'] || ''}</td>
+                <td class="px-6 py-3 text-slate-500 text-xs truncate max-w-xs" title="${row['Detalle del Pago'] || ''}">${row['Detalle del Pago'] || ''}</td>
+                <td class="px-6 py-3 text-right font-bold text-slate-700">${currencyFormatter.format(val)}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        const realTotal = data.reduce((sum, row) => sum + (row['Valor Pagado'] || 0), 0);
+        document.getElementById('totalAmount').textContent = currencyFormatter.format(realTotal);
+
+        const countText = data.length > 1000 ? `Mostrando 1000 de ${data.length} registros.` : `${data.length} registros.`;
+        document.getElementById('recordCountLabel').textContent = countText;
+    }
+
+    // ======================
+    // GRÁFICAS
+    // ======================
+    function renderCharts(data) {
+        updatePieChart(data);
+        updateBarChart(data, document.getElementById('barChartFilter').value);
+    }
+
+    document.getElementById('barChartFilter').addEventListener('change', (e) => {
+        if (filteredData.length > 0) updateBarChart(filteredData, e.target.value);
+    });
+
+    function updatePieChart(data) {
+        const ctx = document.getElementById('pieChart').getContext('2d');
+        const supplierMap = {};
+        data.forEach(item => {
+            const name = item['Tercero Nombre'] || 'Desconocido';
+            supplierMap[name] = (supplierMap[name] || 0) + (item['Valor Pagado'] || 0);
+        });
+
+        let sorted = Object.entries(supplierMap).sort((a, b) => b[1] - a[1]);
+        const top5 = sorted.slice(0, 5);
+        const othersValue = sorted.slice(5).reduce((sum, item) => sum + item[1], 0);
+
+        const labels = top5.map(i => i[0]);
+        const values = top5.map(i => i[1]);
+        if (othersValue > 0) { labels.push('Otros'); values.push(othersValue); }
+
+        if (pieChartInstance) pieChartInstance.destroy();
+
+        const chartColors = ['#312782', '#008041', '#EC268F', '#fbbf24', '#94a3b8', '#cbd5e1'];
+
+        pieChartInstance = new Chart(ctx, {
+            type: 'doughnut',
+            data: { labels, datasets: [{ data: values, backgroundColor: chartColors, borderWidth: 2, borderColor: '#ffffff' }] },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10, family: 'Inter' } } },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const value = context.raw;
+                                const total = context.chart._metasets[context.datasetIndex].total || 1;
+                                const percentage = ((value / total) * 100).toFixed(1) + "%";
+                                return ' ' + currencyFormatter.format(value) + ' (' + percentage + ')';
                             }
                         }
                     }
                 }
-            });
-        }
+            }
+        });
+    }
 
-        function updateBarChart(data, groupBy) {
-            const ctx = document.getElementById('barChart').getContext('2d');
-            
-            // Usamos un objeto para agrupar primero
-            const aggregatedData = {};
+    function updateBarChart(data, groupBy) {
+        const ctx = document.getElementById('barChart').getContext('2d');
+        const aggregatedData = {};
 
-            data.forEach(item => {
-                const dateStr = item['Fecha del Comprobante'];
-                if (!dateStr) return;
-                
-                const dateObj = new Date(dateStr);
-                
-                let key, label, sortValue;
+        data.forEach(item => {
+            const dateStr = item['Fecha del Comprobante'];
+            if (!dateStr) return;
 
-                if (groupBy === 'day') {
-                    // Clave única: YYYY-MM-DD
-                    key = dateObj.toISOString().split('T')[0];
-                    label = dateObj.toLocaleDateString('es-ES');
-                    sortValue = dateObj.getTime();
-                } else if (groupBy === 'month') {
-                    // Clave única: YYYY-MM
-                    const year = dateObj.getFullYear();
-                    const month = dateObj.getMonth(); // 0-11
-                    key = `${year}-${month}`;
-                    label = dateObj.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
-                    // Valor de ordenamiento: Timestamp del primer día del mes
-                    sortValue = new Date(year, month, 1).getTime();
-                } else { // year
-                    key = dateObj.getFullYear().toString();
-                    label = key;
-                    sortValue = dateObj.getFullYear();
-                }
+            const dateObj = new Date(dateStr);
+            if (isNaN(dateObj.getTime())) return;
 
-                if (!aggregatedData[key]) {
-                    aggregatedData[key] = { label, value: 0, sortValue };
-                }
-                aggregatedData[key].value += (item['Valor Pagado'] || 0);
-            });
+            let key, label, sortValue;
 
-            // Convertir a array y ordenar cronológicamente
-            const sortedArray = Object.values(aggregatedData).sort((a, b) => a.sortValue - b.sortValue);
+            if (groupBy === 'day') {
+                key = dateObj.toISOString().split('T')[0];
+                label = dateObj.toLocaleDateString('es-ES');
+                sortValue = dateObj.getTime();
+            } else if (groupBy === 'month') {
+                const year = dateObj.getFullYear();
+                const month = dateObj.getMonth();
+                key = `${year}-${month}`;
+                label = dateObj.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+                sortValue = new Date(year, month, 1).getTime();
+            } else {
+                key = dateObj.getFullYear().toString();
+                label = key;
+                sortValue = dateObj.getFullYear();
+            }
 
-            const labels = sortedArray.map(item => {
-                // Capitalizar primera letra para meses (ej: "enero 2025" -> "Enero 2025")
-                return item.label.charAt(0).toUpperCase() + item.label.slice(1);
-            });
-            const values = sortedArray.map(item => item.value);
+            if (!aggregatedData[key]) aggregatedData[key] = { label, value: 0, sortValue };
+            aggregatedData[key].value += (item['Valor Pagado'] || 0);
+        });
 
-            if (barChartInstance) barChartInstance.destroy();
+        const sortedArray = Object.values(aggregatedData).sort((a, b) => a.sortValue - b.sortValue);
 
-            barChartInstance = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Total Pagado',
-                        data: values,
-                        backgroundColor: '#312782',
-                        hoverBackgroundColor: '#008041',
-                        borderRadius: 4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: { 
-                            beginAtZero: true,
-                            ticks: { callback: (value) => '$' + (value / 1000000).toFixed(0) + 'M', font: {size: 10} },
-                            grid: { borderDash: [2, 4] }
-                        },
-                        x: { grid: { display: false }, ticks: { font: {size: 10} } }
+        const labels = sortedArray.map(item => item.label.charAt(0).toUpperCase() + item.label.slice(1));
+        const values = sortedArray.map(item => item.value);
+
+        if (barChartInstance) barChartInstance.destroy();
+
+        barChartInstance = new Chart(ctx, {
+            type: 'bar',
+            data: { labels, datasets: [{ label: 'Total Pagado', data: values, backgroundColor: '#312782', hoverBackgroundColor: '#008041', borderRadius: 4 }] },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { callback: (value) => '$' + (value / 1000000).toFixed(0) + 'M', font: { size: 10 } },
+                        grid: { borderDash: [2, 4] }
                     },
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: { callbacks: { label: (c) => currencyFormatter.format(c.raw) } }
-                    }
-                }
-            });
-        }
-
-        // --- FUNCIONES DE EXPORTACIÓN (USAN DATOS FILTRADOS) ---
-
-        // 1. Exportar a Excel (XLSX)
-        function downloadExcel() {
-            if (!filteredData || filteredData.length === 0) {
-                alert("No hay datos visibles para exportar");
-                return;
-            }
-
-            const exportData = filteredData.map(row => ({
-                "Fecha": dateFormatter(row['Fecha del Comprobante']),
-                "Beneficiario": row['Tercero Nombre'],
-                "ID Tercero": row['ID Tercero'],
-                "Observación": row['ObservacionCalculada'],
-                "Banco": row['Entidad Bancaria'],
-                "No. Cuenta": row['No. Cuenta Banco'],
-                "Detalle Pago": row['Detalle del Pago'],
-                "Valor Pagado": row['Valor Pagado']
-            }));
-
-            const wb = XLSX.utils.book_new();
-            const ws = XLSX.utils.json_to_sheet(exportData);
-
-            const wscols = [
-                {wch: 12}, {wch: 35}, {wch: 15}, {wch: 30}, {wch: 20}, {wch: 15}, {wch: 40}, {wch: 15}
-            ];
-            ws['!cols'] = wscols;
-
-            XLSX.utils.book_append_sheet(wb, ws, "Transacciones");
-            XLSX.writeFile(wb, "Reporte_Tesoreria_HUHMP.xlsx");
-        }
-
-        // 2. Exportar a PDF (Institucional)
-        function downloadPDF() {
-            if (!filteredData || filteredData.length === 0) {
-                alert("No hay datos visibles para exportar");
-                return;
-            }
-
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF('l', 'mm', 'a4'); // Horizontal (Landscape) para que quepan columnas
-
-            // --- HEADER INSTITUCIONAL ---
-            doc.setFillColor(49, 39, 130); 
-            doc.rect(0, 0, 297, 40, 'F');
-
-            if (base64Logo) {
-                doc.addImage(base64Logo, 'PNG', 10, 5, 50, 25); 
-            }
-
-            doc.setTextColor(255, 255, 255);
-            doc.setFont("helvetica", "bold");
-            doc.setFontSize(16);
-            doc.text("Reporte de Tesorería", 280, 15, { align: "right" });
-            
-            doc.setFontSize(10);
-            doc.setFont("helvetica", "normal");
-            doc.text("ESE Hospital Universitario Hernando Moncaleano Perdomo", 280, 22, { align: "right" });
-            doc.text("GD-SGI-M-005 | Vigencia 2025", 280, 28, { align: "right" });
-
-            doc.setTextColor(100);
-            doc.setFontSize(8);
-            const dateStr = new Date().toLocaleString();
-            doc.text(`Generado: ${dateStr} | Usuario: Reportes`, 14, 46);
-
-            // --- TABLA DE DATOS FILTRADOS ---
-            const tableColumn = ["Fecha", "Beneficiario", "Observación", "ID", "Banco", "Valor"];
-            const tableRows = [];
-
-            filteredData.forEach(row => {
-                const rowData = [
-                    dateFormatter(row['Fecha del Comprobante']),
-                    row['Tercero Nombre'] || '',
-                    row['ObservacionCalculada'] || '',
-                    row['ID Tercero'] || '',
-                    row['Entidad Bancaria'] || '',
-                    currencyFormatter.format(row['Valor Pagado'] || 0)
-                ];
-                tableRows.push(rowData);
-            });
-
-            doc.autoTable({
-                head: [tableColumn],
-                body: tableRows,
-                startY: 50,
-                theme: 'striped',
-                headStyles: { 
-                    fillColor: [49, 39, 130], 
-                    textColor: [255, 255, 255],
-                    fontStyle: 'bold',
-                    fontSize: 9
+                    x: { grid: { display: false }, ticks: { font: { size: 10 } } }
                 },
-                bodyStyles: { fontSize: 8 },
-                alternateRowStyles: { fillColor: [243, 244, 246] }, 
-                margin: { top: 50 },
-                columnStyles: {
-                    1: { cellWidth: 70 }, // Beneficiario
-                    2: { cellWidth: 50 }  // Observación
-                }
-            });
-
-            // --- PIE DE PÁGINA ---
-            const pageCount = doc.internal.getNumberOfPages();
-            for (let i = 1; i <= pageCount; i++) {
-                doc.setPage(i);
-                doc.setFontSize(8);
-                doc.setTextColor(150);
-                doc.text('© 2025 ESE HUHMP - Documento controlado. Cualquier impresión es copia no controlada.', 148, 200, { align: 'center' });
-                doc.text(`Página ${i} de ${pageCount}`, 280, 200, { align: 'right' });
+                plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => currencyFormatter.format(c.raw) } } }
             }
+        });
+    }
 
-            doc.save("Reporte_Tesoreria_HUHMP.pdf");
+    // ======================
+    // EXPORTACIONES
+    // ======================
+        function downloadExcel() {
+        if (!filteredData || filteredData.length === 0) {
+            alert("No hay datos visibles para exportar");
+            return;
         }
 
-        // --- UTILIDADES ---
-        function toggleLoading(show) {
-            document.getElementById('loader').style.display = show ? 'block' : 'none';
-            const btn = document.getElementById('searchForm').querySelector('button');
-            if(show) { btn.disabled = true; btn.classList.add('opacity-70', 'cursor-not-allowed'); } 
-            else { btn.disabled = false; btn.classList.remove('opacity-70', 'cursor-not-allowed'); }
+        const totalPagos = filteredData.reduce((sum, r) => sum + (r['Valor Pagado'] || 0), 0);
+        const numeroPagos = filteredData.length;
+
+        const exportData = filteredData.map(row => ({
+            "Fecha": dateFormatter(row['Fecha del Comprobante']),
+            "Beneficiario": row['Tercero Nombre'],
+            "ID Tercero": row['ID Tercero'],
+            "Observación": row['ObservacionCalculada'],
+            "Banco": row['Entidad Bancaria'],
+            "No. Cuenta": row['No. Cuenta Banco'],
+            "Detalle Pago": row['Detalle del Pago'],
+            "Valor Pagado": row['Valor Pagado']
+        }));
+
+        // Hoja 1: Transacciones
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.json_to_sheet(exportData);
+
+        // Anchos de columna
+        ws['!cols'] = [
+            {wch: 12}, {wch: 35}, {wch: 15}, {wch: 30},
+            {wch: 20}, {wch: 18}, {wch: 40}, {wch: 18}
+        ];
+
+        // Fila resumen al final (Total + No. pagos)
+        const lastRow = exportData.length + 1; // 1-based en sheet (después del header)
+        XLSX.utils.sheet_add_aoa(ws, [
+            [],
+            ["RESUMEN", "", "", "", "", "", "Número de pagos", numeroPagos],
+            ["", "", "", "", "", "", "Total pagado", totalPagos]
+        ], { origin: `A${lastRow + 2}` });
+
+        // Formato moneda para "Valor Pagado" (columna H) y Total (columna H en resumen)
+        // Nota: sin librerías extra, dejamos valores numéricos; Excel los puede formatear manualmente.
+        XLSX.utils.book_append_sheet(wb, ws, "Transacciones");
+
+        // Hoja 2: Resumen (más claro para auditoría)
+        const resumenAoA = [
+            ["REPORTE TESORERÍA - RESUMEN"],
+            ["Generado", new Date().toLocaleString()],
+            ["Usuario", "HUHMP"],
+            [""],
+            ["Número de pagos", numeroPagos],
+            ["Total pagado", totalPagos]
+        ];
+        const ws2 = XLSX.utils.aoa_to_sheet(resumenAoA);
+        ws2['!cols'] = [{wch: 25}, {wch: 35}];
+        XLSX.utils.book_append_sheet(wb, ws2, "Resumen");
+
+        XLSX.writeFile(wb, "Reporte_Tesoreria_HUHMP.xlsx");
+    }
+
+            function drawPdfHeader(doc) {
+        // Header institucional (igual en cada página)
+        doc.setFillColor(49, 39, 130);
+        doc.rect(0, 0, 297, 40, 'F');
+
+        if (base64Logo) {
+            doc.addImage(base64Logo, 'PNG', 10, 5, 50, 25);
         }
 
-        function showStatus(msg, type) {
-            const el = document.getElementById('statusMessage');
-            el.innerHTML = msg; 
-            el.classList.remove('hidden', 'bg-green-50', 'text-green-800', 'border-green-500', 'bg-red-50', 'text-red-800', 'border-red-500');
-            
-            if (type === 'success') el.classList.add('bg-green-50', 'text-green-800', 'border-green-500');
-            else el.classList.add('bg-red-50', 'text-red-800', 'border-red-500');
-            
-            el.style.display = 'block';
+        doc.setTextColor(255, 255, 255);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(16);
+        doc.text("Reporte de Tesorería", 280, 15, { align: "right" });
+
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "normal");
+        doc.text("ESE Hospital Universitario Hernando Moncaleano Perdomo", 280, 22, { align: "right" });
+        doc.text("GD-SGI-M-005 | Vigencia 2025", 280, 28, { align: "right" });
+    }
+
+    function downloadPDF() {
+        if (!filteredData || filteredData.length === 0) { alert("No hay datos visibles para exportar"); return; }
+
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF('l', 'mm', 'a4');
+
+        const dateStr = new Date().toLocaleString();
+        const totalPagos = filteredData.reduce((sum, r) => sum + (r['Valor Pagado'] || 0), 0);
+        const numeroPagos = filteredData.length;
+
+        const tableColumn = ["Fecha", "Beneficiario", "Observación", "ID", "Banco", "Valor"];
+        const tableRows = filteredData.map(row => ([
+            dateFormatter(row['Fecha del Comprobante']),
+            row['Tercero Nombre'] || '',
+            row['ObservacionCalculada'] || '',
+            row['ID Tercero'] || '',
+            row['Entidad Bancaria'] || '',
+            currencyFormatter.format(row['Valor Pagado'] || 0)
+        ]));
+
+        doc.autoTable({
+            head: [tableColumn],
+            body: tableRows,
+            startY: 62,
+            theme: 'striped',
+            headStyles: { fillColor: [49,39,130], textColor: [255,255,255], fontStyle: 'bold', fontSize: 9 },
+            bodyStyles: { fontSize: 8 },
+            alternateRowStyles: { fillColor: [243,244,246] },
+            margin: { top: 50 },
+            columnStyles: { 1: { cellWidth: 70 }, 2: { cellWidth: 50 } },
+
+            // Encabezado repetido en cada hoja + resumen en cada hoja (arriba)
+            didDrawPage: function () {
+                drawPdfHeader(doc);
+
+                // Metadata bajo header
+                doc.setTextColor(100);
+                doc.setFontSize(8);
+                doc.text(`Generado: ${dateStr} | Usuario: HUHMP`, 14, 46);
+
+                // Resumen (conteo + total)
+                doc.setFont("helvetica", "bold");
+                doc.setTextColor(30);
+                doc.text(`Número de pagos: ${numeroPagos}`, 14, 54);
+                doc.text(`Total pagado: ${currencyFormatter.format(totalPagos)}`, 14, 59);
+                doc.setFont("helvetica", "normal");
+            }
+        });
+
+        // Pie de página + paginación
+        const pageCount = doc.internal.getNumberOfPages();
+        for (let i = 1; i <= pageCount; i++) {
+            doc.setPage(i);
+            doc.setFontSize(8);
+            doc.setTextColor(150);
+            doc.text('© 2025 ESE HUHMP - Documento controlado. Cualquier impresión es copia no controlada.', 148, 200, { align: 'center' });
+            doc.text(`Página ${i} de ${pageCount}`, 280, 200, { align: 'right' });
         }
 
-        // Modal Help Logic
-        const helpModal = document.getElementById('helpModal');
-        const closeModal = () => helpModal.classList.remove('active');
-        const openModal = () => helpModal.classList.add('active');
+        // Resumen final al final del documento (debajo de la última tabla), si hay espacio:
+        try {
+            const finalY = (doc.lastAutoTable && doc.lastAutoTable.finalY) ? doc.lastAutoTable.finalY : null;
+            if (finalY && finalY < 180) {
+                doc.setFont("helvetica", "bold");
+                doc.setTextColor(30);
+                doc.text(`Resumen: ${numeroPagos} pagos | Total: ${currencyFormatter.format(totalPagos)}`, 14, finalY + 10);
+                doc.setFont("helvetica", "normal");
+            }
+        } catch (_) {}
 
-        document.getElementById('helpBtn').onclick = openModal;
-        document.getElementById('closeHelp').onclick = closeModal;
-        document.getElementById('closeHelpBtn').onclick = closeModal;
-        helpModal.onclick = (e) => { if(e.target === helpModal) closeModal(); };
+        doc.save("Reporte_Tesoreria_HUHMP.pdf");
+    }
+        ;
 
-    </script>
+        const pageCount = doc.internal.getNumberOfPages();
+        for (let i = 1; i <= pageCount; i++) {
+            doc.setPage(i);
+            doc.setFontSize(8);
+            doc.setTextColor(150);
+            doc.text('© 2025 ESE HUHMP - Documento controlado. Cualquier impresión es copia no controlada.', 148, 200, { align: 'center' });
+            doc.text(`Página ${i} de ${pageCount}`, 280, 200, { align: 'right' });
+        }
+
+        doc.save("Reporte_Tesoreria_HUHMP.pdf");
+  
+
+        doc.save("Reporte_Tesoreria_HUHMP.pdf");
+    
+
+    
+    function resetAppState(options = { clearDates: true, clearCache: false }) {
+        // Limpiar datos en memoria
+        globalData = [];
+        filteredData = [];
+        sortConfig = { key: null, direction: 'asc' };
+
+        // Limpiar tabla / totales
+        const tbody = document.getElementById('resultsBody');
+        if (tbody) tbody.innerHTML = '';
+        const totalEl = document.getElementById('totalAmount');
+        if (totalEl) totalEl.textContent = '$0';
+        const countEl = document.getElementById('recordCountLabel');
+        if (countEl) countEl.textContent = '* Visualizando últimos registros.';
+
+        // Limpiar filtros locales
+        const searchInput = document.getElementById('searchInput');
+        if (searchInput) searchInput.value = '';
+        const dropdown = document.getElementById('multiSelectDropdown');
+        if (dropdown) dropdown.innerHTML = '';
+        updateMultiSelectLabel();
+
+        // Ocultar secciones de resultados/gráficas
+        document.getElementById('section-resumen').classList.add('hidden');
+        document.getElementById('section-graficas').classList.add('hidden');
+
+        // Limpiar mensajes
+        const statusEl = document.getElementById('statusMessage');
+        statusEl.classList.add('hidden');
+        statusEl.innerHTML = '';
+
+        // Resetear fechas (opcional)
+        if (options.clearDates) {
+            const rs = document.getElementById('rangeStart');
+            const re = document.getElementById('rangeEnd');
+            if (rs) rs.value = '';
+            if (re) re.value = '';
+        }
+
+        // Destruir gráficas para evitar duplicados/memoria
+        try { if (pieChartInstance) { pieChartInstance.destroy(); pieChartInstance = null; } } catch (_) {}
+        try { if (barChartInstance) { barChartInstance.destroy(); barChartInstance = null; } } catch (_) {}
+
+        // Resetear selector de agrupación
+        const barFilter = document.getElementById('barChartFilter');
+        if (barFilter) barFilter.value = 'month';
+
+        // Resetear loader/botones
+        toggleLoading(false);
+
+        // Borrar cache (opcional)
+        if (options.clearCache) {
+            try { localStorage.removeItem(CACHE_KEY); } catch (_) {}
+        }
+
+        // Feedback
+        showStatus('Se restableció el visor. Ya puede iniciar una nueva consulta.', 'success');
+    }
+
+    // Botón Restablecer
+    const resetBtn = document.getElementById('resetBtn');
+    if (resetBtn) {
+        resetBtn.addEventListener('click', () => {
+            // Por defecto: limpia filtros/tabla/gráficas y fechas. No borra el cache.
+            resetAppState({ clearDates: true, clearCache: false });
+        });
+    }
+
+
+// ======================
+    // UI Helpers
+    // ======================
+    function toggleLoading(show) {
+        document.getElementById('loader').style.display = show ? 'block' : 'none';
+        const btn = document.getElementById('searchForm').querySelector('button');
+        if (show) { btn.disabled = true; btn.classList.add('opacity-70','cursor-not-allowed'); }
+        else { btn.disabled = false; btn.classList.remove('opacity-70','cursor-not-allowed'); }
+    }
+
+    function showStatus(msg, type) {
+        const el = document.getElementById('statusMessage');
+        el.innerHTML = msg;
+        el.classList.remove('hidden','bg-green-50','text-green-800','border-green-500','bg-red-50','text-red-800','border-red-500');
+
+        if (type === 'success') el.classList.add('bg-green-50','text-green-800','border-green-500');
+        else el.classList.add('bg-red-50','text-red-800','border-red-500');
+
+        el.style.display = 'block';
+    }
+
+    // ======================
+    // Modal Ayuda
+    // ======================
+    const helpModal = document.getElementById('helpModal');
+    const closeModal = () => helpModal.classList.remove('active');
+    const openModal = () => helpModal.classList.add('active');
+
+    document.getElementById('helpBtn').onclick = openModal;
+    document.getElementById('closeHelp').onclick = closeModal;
+    document.getElementById('closeHelpBtn').onclick = closeModal;
+    helpModal.onclick = (e) => { if (e.target === helpModal) closeModal(); };
+</script>
+
 </body>
 </html>
