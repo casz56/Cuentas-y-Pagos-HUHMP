@@ -264,8 +264,8 @@
 
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
-                    <h3 class="text-sm font-bold text-slate-700 text-center mb-1">Distribución de Pagos por Proveedor</h3>
-                    <p class="text-xs text-slate-500 text-center mb-4">Top 5 vs. Otros (Basado en Filtros)</p>
+                    <h3 class="text-sm font-bold text-slate-700 text-center mb-1">Distribución de Pagos por Observación</h3>
+                    <p class="text-xs text-slate-500 text-center mb-4">Top vs. Otros (Basado en Filtros)</p>
                     <div class="relative h-72 w-full"><canvas id="pieChart"></canvas></div>
                 </div>
 
@@ -802,48 +802,111 @@ if (!response.ok) {
     });
 
     function updatePieChart(data) {
-        const ctx = document.getElementById('pieChart').getContext('2d');
-        const supplierMap = {};
-        data.forEach(item => {
-            const name = item['Tercero Nombre'] || 'Desconocido';
-            supplierMap[name] = (supplierMap[name] || 0) + (item['Valor Pagado'] || 0);
-        });
+            const canvas = document.getElementById('pieChart');
+            const ctx = canvas.getContext('2d');
 
-        let sorted = Object.entries(supplierMap).sort((a, b) => b[1] - a[1]);
-        const top5 = sorted.slice(0, 5);
-        const othersValue = sorted.slice(5).reduce((sum, item) => sum + item[1], 0);
+            // Agrupar por Observación (en lugar de Proveedor)
+            const obsMap = {};
+            data.forEach(item => {
+                const obs = item['ObservacionCalculada'] || 'OTROS PAGOS';
+                obsMap[obs] = (obsMap[obs] || 0) + (item['Valor Pagado'] || 0);
+            });
 
-        const labels = top5.map(i => i[0]);
-        const values = top5.map(i => i[1]);
-        if (othersValue > 0) { labels.push('Otros'); values.push(othersValue); }
+            let sorted = Object.entries(obsMap).sort((a, b) => b[1] - a[1]);
 
-        if (pieChartInstance) pieChartInstance.destroy();
+            // Top N vs Otros
+            const TOP_N = 8;
+            const topN = sorted.slice(0, TOP_N);
+            const othersValue = sorted.slice(TOP_N).reduce((sum, item) => sum + item[1], 0);
 
-        const chartColors = ['#312782', '#008041', '#EC268F', '#fbbf24', '#94a3b8', '#cbd5e1'];
+            const labels = topN.map(i => i[0]);
+            const values = topN.map(i => i[1]);
+            if (othersValue > 0) { labels.push('Otros'); values.push(othersValue); }
 
-        pieChartInstance = new Chart(ctx, {
-            type: 'doughnut',
-            data: { labels, datasets: [{ data: values, backgroundColor: chartColors, borderWidth: 2, borderColor: '#ffffff' }] },
-            options: {
-                responsive: true, maintainAspectRatio: false,
-                plugins: {
-                    legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10, family: 'Inter' } } },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                const value = context.raw;
-                                const total = context.chart._metasets[context.datasetIndex].total || 1;
-                                const percentage = ((value / total) * 100).toFixed(1) + "%";
-                                return ' ' + currencyFormatter.format(value) + ' (' + percentage + ')';
+            if (pieChartInstance) {
+                try { pieChartInstance.destroy(); } catch (_) {}
+                pieChartInstance = null;
+            }
+
+            // Paleta institucional + complementos
+            const baseColors = ['#312782', '#008041', '#EC268F', '#fbbf24', '#94a3b8', '#22c55e', '#0ea5e9', '#a855f7', '#fb7185', '#64748b'];
+
+            pieChartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: values,
+                        backgroundColor: labels.map((_, i) => baseColors[i % baseColors.length]),
+                        borderWidth: 2,
+                        borderColor: '#ffffff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10, family: 'Inter' } } },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const value = context.raw;
+                                    const total = context.chart._metasets[context.datasetIndex].total;
+                                    const percentage = total ? ((value / total) * 100).toFixed(1) + "%" : "0%";
+                                    return ' ' + context.label + ': ' + currencyFormatter.format(value) + ' (' + percentage + ')';
+                                }
                             }
                         }
                     }
                 }
-            }
-        });
-    }
+            });
 
-    function updateBarChart(data, groupBy) {
+            // ==============================
+            // DOBLE CLIC = FILTRO GLOBAL POR OBSERVACIÓN
+            // - dblclick en una porción => deja SOLO esa observación seleccionada en el multiselect
+            // - dblclick de nuevo en la misma (cuando está solo esa) => vuelve a seleccionar TODAS
+            // - "Otros" no filtra (es agrupación)
+            // ==============================
+            if (!canvas.__dblclickBound) {
+                canvas.addEventListener('dblclick', (evt) => {
+                    if (!pieChartInstance) return;
+
+                    const points = pieChartInstance.getElementsAtEventForMode(evt, 'nearest', { intersect: true }, true);
+                    if (!points || points.length === 0) return;
+
+                    const firstPoint = points[0];
+                    const label = pieChartInstance.data.labels[firstPoint.index];
+
+                    if (!label || label === 'Otros') return;
+
+                    const dropdown = document.getElementById('multiSelectDropdown');
+                    const allCb = dropdown.querySelector('#selectAllObs');
+                    const cbs = Array.from(dropdown.querySelectorAll('input[type="checkbox"]:not(#selectAllObs)'));
+                    if (cbs.length === 0) return;
+
+                    const target = cbs.find(cb => cb.value === label);
+                    if (!target) return;
+
+                    const checked = cbs.filter(cb => cb.checked);
+                    const alreadyOnlyThis = (checked.length === 1 && checked[0].value === label);
+
+                    if (alreadyOnlyThis) {
+                        cbs.forEach(cb => cb.checked = true);
+                        if (allCb) allCb.checked = true;
+                    } else {
+                        cbs.forEach(cb => cb.checked = (cb.value === label));
+                        if (allCb) allCb.checked = false;
+                    }
+
+                    updateMultiSelectLabel();
+                    applyLocalFilters(); // aplica a todo el proyecto
+                });
+
+                canvas.__dblclickBound = true;
+            }
+        }
+
+        function updateBarChart(data, groupBy) {
         const ctx = document.getElementById('barChart').getContext('2d');
         const aggregatedData = {};
 
@@ -1013,22 +1076,29 @@ if (!response.ok) {
             margin: { top: 50 },
             columnStyles: { 1: { cellWidth: 70 }, 2: { cellWidth: 50 } },
 
-            // Encabezado repetido en cada hoja + resumen en cada hoja (arriba)
-            didDrawPage: function () {
-                drawPdfHeader(doc);
+            // Encabezado repetido en cada hoja y resumen SOLO en la primera hoja
+didDrawPage: function (data) {
+    // Header en todas las páginas
+    drawPdfHeader(doc);
 
-                // Metadata bajo header
-                doc.setTextColor(100);
-                doc.setFontSize(8);
-                doc.text(`Generado: ${dateStr} | Usuario: HUHMP`, 14, 46);
+    // Metadata bajo header (todas las páginas)
+    doc.setTextColor(100);
+    doc.setFontSize(8);
+    doc.text(`Generado: ${dateStr} | Usuario: HUHMP`, 14, 46);
 
-                // Resumen (conteo + total)
-                doc.setFont("helvetica", "bold");
-                doc.setTextColor(30);
-                doc.text(`Número de pagos: ${numeroPagos}`, 14, 54);
-                doc.text(`Total pagado: ${currencyFormatter.format(totalPagos)}`, 14, 59);
-                doc.setFont("helvetica", "normal");
-            }
+    // Resumen SOLO en la primera página
+    if (data.pageNumber === 1) {
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(30);
+        doc.text(`Número de pagos: ${numeroPagos}`, 14, 54);
+        doc.text(
+            `Total pagado: ${currencyFormatter.format(totalPagos)}`,
+            14,
+            59
+        );
+        doc.setFont("helvetica", "normal");
+    }
+}
         });
 
         // Pie de página + paginación
@@ -1069,7 +1139,7 @@ if (!response.ok) {
   
 
         doc.save("Reporte_Tesoreria_HUHMP.pdf");
-    
+  
 
     
     function resetAppState(options = { clearDates: true, clearCache: false }) {
